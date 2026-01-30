@@ -3,8 +3,10 @@ import { invoke } from '@tauri-apps/api/core';
 // import { listen } from '@tauri-apps/api/event';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 
-import { Plus, X, Check, Trash2, Pin, Settings } from 'lucide-react';
+import { Plus, X, Check, Trash2, Pin, Settings, Sparkles, Loader2 } from 'lucide-react';
 import './App.css';
+import { SettingsPanel } from './components/Settings';
+import { parseTodoWithAI, getAISettings, AISettings } from './utils/ai';
 
 function useMouseSort<T>(items: T[], getId: (item: T) => string, onReorder: (items: T[]) => void) {
   const [draggedId, setDraggedId] = useState<string | null>(null);
@@ -106,6 +108,10 @@ function App() {
   const [activeTab, setActiveTab] = useState<'pending' | 'completed'>('pending');
   const [isPinned, setIsPinned] = useState(true);
   const [editingTodoId, setEditingTodoId] = useState<string | null>(null);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [aiSettings, setAiSettings] = useState<AISettings | null>(null);
+  const [isAiParsing, setIsAiParsing] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
   const appWindow = getCurrentWebviewWindow();
 
   // 加载待办
@@ -121,9 +127,11 @@ function App() {
   useEffect(() => {
     loadTodos(activeTab === 'completed');
     appWindow.isAlwaysOnTop().then(setIsPinned);
-
-
   }, [loadTodos, activeTab, appWindow]);
+
+  useEffect(() => {
+    setAiSettings(getAISettings());
+  }, []);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
@@ -195,6 +203,33 @@ function App() {
     setIsPinned(newState);
   };
 
+  const handleAIParse = async () => {
+    if (!newTodo.trim() || !aiSettings) return;
+
+    if (!aiSettings.enabled) {
+      setAiError('AI功能未启用，请在设置中开启');
+      return;
+    }
+
+    if (!aiSettings.apiKey) {
+      setAiError('请先配置API密钥');
+      return;
+    }
+
+    setIsAiParsing(true);
+    setAiError(null);
+
+    try {
+      const result = await parseTodoWithAI(newTodo, aiSettings);
+      setNewTodo(result.title);
+      setPriority(result.priority);
+    } catch (error) {
+      setAiError(error instanceof Error ? error.message : 'AI解析失败');
+    } finally {
+      setIsAiParsing(false);
+    }
+  };
+
   const priorityColors = {
     high: '#ff6b6b',
     medium: '#feca57', 
@@ -250,6 +285,9 @@ function App() {
         </div>
         <div className="header-right">
           <span className="shortcut-hint">Ctrl+O</span>
+          <button className="header-settings-btn" onClick={() => setIsSettingsOpen(true)}>
+            <Settings size={14} />
+          </button>
           <button className="close-btn" onClick={closeWindow}>
             <X size={14} />
           </button>
@@ -321,7 +359,7 @@ function App() {
         ))}
 
         {isAdding && activeTab === 'pending' && (
-          <div className="modal-overlay" onClick={() => {setIsAdding(false); setNewTodo('');}}>
+          <div className="modal-overlay" onClick={() => {setIsAdding(false); setNewTodo(''); setAiError(null);}}>
             <div className="add-todo-form" onClick={(e) => e.stopPropagation()}>
               <h3 style={{ margin: '0 0 12px 0', fontSize: '16px', color: '#5d4e37' }}>添加新待办</h3>
               <input
@@ -332,6 +370,32 @@ function App() {
                 autoFocus
                 className="todo-input"
               />
+              {aiSettings?.enabled && (
+                <div className="ai-parse-section">
+                  <button
+                    className="btn-ai-parse"
+                    onClick={handleAIParse}
+                    disabled={isAiParsing || !newTodo.trim()}
+                  >
+                    {isAiParsing ? (
+                      <>
+                        <Loader2 size={14} className="spin" />
+                        AI解析中...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles size={14} />
+                        AI解析
+                      </>
+                    )}
+                  </button>
+                  {aiError && (
+                    <div className="ai-error-message">
+                      {aiError}
+                    </div>
+                  )}
+                </div>
+              )}
               <div className="priority-selector">
                 {(['high', 'medium', 'low'] as const).map((p) => (
                   <button
@@ -346,7 +410,7 @@ function App() {
               </div>
               <div className="form-actions">
                 <button className="btn-primary" onClick={addTodo}>添加</button>
-                <button className="btn-secondary" onClick={() => {setIsAdding(false); setNewTodo('');}}>取消</button>
+                <button className="btn-secondary" onClick={() => {setIsAdding(false); setNewTodo(''); setAiError(null);}}>取消</button>
               </div>
             </div>
           </div>
@@ -358,6 +422,8 @@ function App() {
           <Plus size={20} />
         </button>
       )}
+
+      <SettingsPanel isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
     </div>
   );
 }
