@@ -49,9 +49,35 @@ body {
   gap: 6px;
 }
 
-.pin-icon {
+.pin-btn {
+  background: none;
+  border: none;
+  padding: 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.pin-btn:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.pin-btn.pinned {
+  background: rgba(139, 115, 85, 0.2);
+}
+
+.pin-btn.pinned .pin-icon {
   color: #8b7355;
+  transform: rotate(0deg);
+}
+
+.pin-icon {
+  color: #aaa;
   transform: rotate(-45deg);
+  transition: all 0.2s;
 }
 
 .app-title {

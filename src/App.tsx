@@ -19,6 +19,7 @@ function App() {
   const [isAdding, setIsAdding] = useState(false);
   const [priority, setPriority] = useState<'high' | 'medium' | 'low'>('medium');
   const [activeTab, setActiveTab] = useState<'pending' | 'completed'>('pending');
+  const [isPinned, setIsPinned] = useState(true);
   const appWindow = getCurrentWebviewWindow();
 
   // 加载待办
@@ -35,6 +36,9 @@ function App() {
     // 根据当前分类加载对应数据
     loadTodos(activeTab === 'completed');
     
+    // 获取当前窗口置顶状态
+    appWindow.isAlwaysOnTop().then(setIsPinned);
+    
     // 监听提醒事件
     const unlisten = listen('todo-reminder', (event) => {
       console.log('Reminder:', event.payload);
@@ -43,7 +47,7 @@ function App() {
     return () => {
       unlisten.then(fn => fn());
     };
-  }, [loadTodos, activeTab]);
+  }, [loadTodos, activeTab, appWindow]);
 
   // 拖动处理 - 只在便签背景/头部区域启动拖动
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -161,6 +165,16 @@ function App() {
     appWindow.hide();
   };
 
+  const togglePin = async () => {
+    try {
+      const newState = !isPinned;
+      await appWindow.setAlwaysOnTop(newState);
+      setIsPinned(newState);
+    } catch (error) {
+      console.error('Failed to toggle pin:', error);
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -195,7 +209,13 @@ function App() {
       {/* 便签头部 */}
       <div className="sticker-header">
         <div className="header-left">
-          <Pin size={14} className="pin-icon" />
+          <button 
+            className={`pin-btn ${isPinned ? 'pinned' : ''}`}
+            onClick={togglePin}
+            title={isPinned ? '取消置顶' : '置顶窗口'}
+          >
+            <Pin size={14} className="pin-icon" />
+          </button>
           <span className="app-title">吐司便签</span>
         </div>
         <div className="header-right">

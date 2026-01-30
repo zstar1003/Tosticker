@@ -1,7 +1,6 @@
 use crate::db::Db;
 use crate::models::*;
 use chrono::Utc;
-use serde_json::json;
 use sqlx::Row;
 use tauri::{command, State};
 use uuid::Uuid;
