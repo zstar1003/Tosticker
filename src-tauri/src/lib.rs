@@ -54,7 +54,7 @@ pub fn run() {
         .setup(|app| {
             // Initialize window position to top-right corner
             if let Some(window) = app.get_webview_window("main") {
-                if let Some(monitor) = window.current_monitor().unwrap() {
+                if let Ok(Some(monitor)) = window.current_monitor() {
                     let monitor_size = monitor.size();
                     let x = monitor_size.width as f64 - 320.0 - 20.0;
                     let y = 20.0;
