@@ -298,15 +298,42 @@ body {
   background: rgba(255, 107, 107, 0.1);
 }
 
-/* 添加表单 */
+/* 弹窗遮罩 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* 添加表单弹窗 */
 .add-todo-form {
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 8px;
-  padding: 12px;
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  width: 280px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  animation: slideIn 0.3s ease-out;
+  gap: 12px;
+  animation: scaleIn 0.3s ease-out;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 .todo-input {

@@ -321,30 +321,33 @@ function App() {
         ))}
 
         {isAdding && activeTab === 'pending' && (
-          <div className="add-todo-form">
-            <input
-              type="text"
-              value={newTodo}
-              onChange={(e) => setNewTodo(e.target.value)}
-              placeholder="输入待办事项..."
-              autoFocus
-              className="todo-input"
-            />
-            <div className="priority-selector">
-              {(['high', 'medium', 'low'] as const).map((p) => (
-                <button
-                  key={p}
-                  className={`priority-btn ${priority === p ? 'active' : ''}`}
-                  style={{ backgroundColor: priorityColors[p] }}
-                  onClick={() => setPriority(p)}
-                >
-                  {p === 'high' ? '高' : p === 'medium' ? '中' : '低'}
-                </button>
-              ))}
-            </div>
-            <div className="form-actions">
-              <button className="btn-primary" onClick={addTodo}>添加</button>
-              <button className="btn-secondary" onClick={() => {setIsAdding(false); setNewTodo('');}}>取消</button>
+          <div className="modal-overlay" onClick={() => {setIsAdding(false); setNewTodo('');}}>
+            <div className="add-todo-form" onClick={(e) => e.stopPropagation()}>
+              <h3 style={{ margin: '0 0 12px 0', fontSize: '16px', color: '#5d4e37' }}>添加新待办</h3>
+              <input
+                type="text"
+                value={newTodo}
+                onChange={(e) => setNewTodo(e.target.value)}
+                placeholder="输入待办事项..."
+                autoFocus
+                className="todo-input"
+              />
+              <div className="priority-selector">
+                {(['high', 'medium', 'low'] as const).map((p) => (
+                  <button
+                    key={p}
+                    className={`priority-btn ${priority === p ? 'active' : ''}`}
+                    style={{ backgroundColor: priorityColors[p] }}
+                    onClick={() => setPriority(p)}
+                  >
+                    {p === 'high' ? '高' : p === 'medium' ? '中' : '低'}
+                  </button>
+                ))}
+              </div>
+              <div className="form-actions">
+                <button className="btn-primary" onClick={addTodo}>添加</button>
+                <button className="btn-secondary" onClick={() => {setIsAdding(false); setNewTodo('');}}>取消</button>
+              </div>
             </div>
           </div>
         )}
