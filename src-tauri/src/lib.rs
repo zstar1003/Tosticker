@@ -82,6 +82,7 @@ pub fn run() {
             delete_todo,
             get_todo_stats,
             get_todos_with_reminders,
+            update_todo_order,
             create_inspiration,
             get_inspirations,
             delete_inspiration,

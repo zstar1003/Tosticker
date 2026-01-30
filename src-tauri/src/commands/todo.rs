@@ -1,7 +1,6 @@
 use crate::db::Db;
 use crate::models::*;
 use chrono::Utc;
-use serde_json::json;
 use sqlx::Row;
 use tauri::{command, State};
 use uuid::Uuid;
@@ -14,10 +13,21 @@ pub async fn create_todo(
     let id = Uuid::new_v4().to_string();
     let now = Utc::now();
 
+    // Get max sort_order for this priority to append at the end
+    let max_order: Option<i32> = sqlx::query_scalar(
+        "SELECT MAX(sort_order) FROM todos WHERE priority = ? AND archived = 0"
+    )
+    .bind(&request.priority)
+    .fetch_one(&*db)
+    .await
+    .unwrap_or(Some(0));
+
+    let sort_order = max_order.unwrap_or(0) + 1;
+
     let todo = sqlx::query_as::<_, Todo>(
         r#"
-        INSERT INTO todos (id, title, description, priority, due_date, reminder_at, completed, archived, created_at, updated_at)
-        VALUES (?1, ?2, ?3, ?4, ?5, ?6, 0, 0, ?7, ?7)
+        INSERT INTO todos (id, title, description, priority, due_date, reminder_at, completed, archived, sort_order, created_at, updated_at)
+        VALUES (?1, ?2, ?3, ?4, ?5, ?6, 0, 0, ?7, ?8, ?8)
         RETURNING *
         "#,
     )
@@ -27,6 +37,7 @@ pub async fn create_todo(
     .bind(&request.priority)
     .bind(request.due_date)
     .bind(request.reminder_at)
+    .bind(sort_order)
     .bind(now)
     .fetch_one(&*db)
     .await
@@ -48,7 +59,7 @@ pub async fn get_todos(db: State<'_, Db>, archived: bool) -> Result<Vec<Todo>, S
                 WHEN 'low' THEN 3 
                 ELSE 4 
             END,
-            due_date ASC NULLS LAST,
+            sort_order ASC,
             created_at DESC
         "#,
     )
@@ -95,6 +106,19 @@ pub async fn update_todo(db: State<'_, Db>, request: UpdateTodoRequest) -> Resul
     .map_err(|e| e.to_string())?;
 
     Ok(todo)
+}
+
+#[command]
+pub async fn update_todo_order(db: State<'_, Db>, orders: Vec<(String, i32)>) -> Result<(), String> {
+    for (id, sort_order) in orders {
+        sqlx::query("UPDATE todos SET sort_order = ? WHERE id = ?")
+            .bind(sort_order)
+            .bind(&id)
+            .execute(&*db)
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+    Ok(())
 }
 
 #[command]

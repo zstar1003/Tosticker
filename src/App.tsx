@@ -1,9 +1,90 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { invoke } from '@tauri-apps/api/core';
-import { listen } from '@tauri-apps/api/event';
+// import { listen } from '@tauri-apps/api/event';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { Plus, X, Check, Trash2, Pin, Settings } from 'lucide-react';
 import './App.css';
+
+function useMouseSort<T>(items: T[], getId: (item: T) => string, onReorder: (items: T[]) => void) {
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [dropTargetId, setDropTargetId] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const draggedItemRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleMouseDown = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const item = target.closest('[data-sortable="true"]') as HTMLElement;
+      if (!item || target.closest('button')) return;
+
+      e.preventDefault();
+      const id = item.getAttribute('data-todo-id');
+      if (!id) return;
+
+      setDraggedId(id);
+      draggedItemRef.current = item;
+      item.classList.add('dragging');
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!draggedItemRef.current) return;
+
+      const elementsBelow = document.elementsFromPoint(e.clientX, e.clientY);
+      const targetItem = elementsBelow.find(
+        el => el !== draggedItemRef.current && el.closest('[data-sortable="true"]')
+      ) as HTMLElement | undefined;
+
+      if (targetItem) {
+        const targetId = targetItem.getAttribute('data-todo-id');
+        if (targetId && targetId !== draggedId) {
+          setDropTargetId(targetId);
+          document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+          targetItem.classList.add('drag-over');
+        }
+      }
+    };
+
+    const handleMouseUp = () => {
+      if (!draggedItemRef.current) return;
+
+      const draggedId_current = draggedId;
+      const targetId = dropTargetId;
+
+      if (draggedId_current && targetId && draggedId_current !== targetId) {
+        const newItems = [...items];
+        const draggedIdx = newItems.findIndex(item => getId(item) === draggedId_current);
+        const targetIdx = newItems.findIndex(item => getId(item) === targetId);
+
+        if (draggedIdx !== -1 && targetIdx !== -1 && draggedIdx !== targetIdx) {
+          const [removed] = newItems.splice(draggedIdx, 1);
+          newItems.splice(targetIdx, 0, removed);
+          onReorder(newItems);
+        }
+      }
+
+      draggedItemRef.current.classList.remove('dragging');
+      document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+      setDraggedId(null);
+      setDropTargetId(null);
+      draggedItemRef.current = null;
+    };
+
+    container.addEventListener('mousedown', handleMouseDown);
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      container.removeEventListener('mousedown', handleMouseDown);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [items, draggedId, dropTargetId, getId, onReorder]);
+
+  return { containerRef, draggedId, dropTargetId };
+}
 
 interface Todo {
   id: string;
@@ -11,6 +92,7 @@ interface Todo {
   completed: boolean;
   archived: boolean;
   priority: 'high' | 'medium' | 'low';
+  sort_order: number;
   created_at: string;
   updated_at?: string;
 }
@@ -36,96 +118,24 @@ function App() {
   }, []);
 
   useEffect(() => {
-    // 根据当前分类加载对应数据
     loadTodos(activeTab === 'completed');
-    
-    // 获取当前窗口置顶状态
     appWindow.isAlwaysOnTop().then(setIsPinned);
-    
-    // 监听提醒事件
-    const unlisten = listen('todo-reminder', (event) => {
-      console.log('Reminder:', event.payload);
-    });
-    
-    return () => {
-      unlisten.then(fn => fn());
-    };
   }, [loadTodos, activeTab, appWindow]);
 
-  // 拖动处理 - 只在便签背景/头部区域启动拖动
   const handleMouseDown = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
-    
-    // 检查是否点击了交互元素（按钮、输入框、复选框等）
-    const isInteractive = 
-      target.tagName === 'BUTTON' ||
-      target.tagName === 'INPUT' ||
-      target.tagName === 'TEXTAREA' ||
-      target.closest('button') ||
-      target.closest('input') ||
-      target.closest('.tab-container');
-    
-    // 如果点击的是交互元素，不启动拖动，也不阻止默认行为
-    if (isInteractive) {
-      return;
-    }
-    
-    // 只在便签容器或头部区域启动拖动
-    const isDraggableArea = 
-      target.classList.contains('sticker-container') ||
-      target.classList.contains('sticker-header') ||
-      target.classList.contains('app-title') ||
-      target.classList.contains('pin-icon') ||
-      target.classList.contains('header-right') ||
-      target.classList.contains('header-left') ||
-      target.classList.contains('shortcut-hint') ||
-      target.closest('.sticker-header');
-    
-    if (isDraggableArea) {
+    // 只有点击头部按钮时才启动窗口拖拽
+    if (target.closest('button') && target.closest('.sticker-header')) {
       e.preventDefault();
-      appWindow.startDragging();
-    }
-  };
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    const target = e.target as HTMLElement;
-    
-    const isInteractive = 
-      target.tagName === 'BUTTON' ||
-      target.tagName === 'INPUT' ||
-      target.tagName === 'TEXTAREA' ||
-      target.closest('button') ||
-      target.closest('input') ||
-      target.closest('.tab-container');
-    
-    if (isInteractive) {
-      return;
-    }
-    
-    const isDraggableArea = 
-      target.classList.contains('sticker-container') ||
-      target.classList.contains('sticker-header') ||
-      target.classList.contains('app-title') ||
-      target.classList.contains('pin-icon') ||
-      target.classList.contains('header-right') ||
-      target.classList.contains('header-left') ||
-      target.classList.contains('shortcut-hint') ||
-      target.closest('.sticker-header');
-    
-    if (isDraggableArea) {
       appWindow.startDragging();
     }
   };
 
   const addTodo = async () => {
     if (!newTodo.trim()) return;
-    
     try {
       await invoke('create_todo', {
-        request: {
-          title: newTodo.trim(),
-          priority,
-        }
+        request: { title: newTodo.trim(), priority }
       });
       setNewTodo('');
       setIsAdding(false);
@@ -166,39 +176,20 @@ function App() {
 
   const updateTodoPriority = async (id: string, newPriority: 'high' | 'medium' | 'low') => {
     try {
-      await invoke('update_todo', {
-        request: { id, priority: newPriority }
-      });
+      await invoke('update_todo', { request: { id, priority: newPriority } });
       setEditingTodoId(null);
       loadTodos(activeTab === 'completed');
     } catch (error) {
-      console.error('Failed to update todo priority:', error);
+      console.error('Failed to update priority:', error);
     }
   };
 
-  const closeWindow = () => {
-    appWindow.hide();
-  };
-
+  const closeWindow = () => appWindow.hide();
+  
   const togglePin = async () => {
-    try {
-      const newState = !isPinned;
-      await appWindow.setAlwaysOnTop(newState);
-      setIsPinned(newState);
-    } catch (error) {
-      console.error('Failed to toggle pin:', error);
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      addTodo();
-    }
-    if (e.key === 'Escape') {
-      setIsAdding(false);
-      setNewTodo('');
-    }
+    const newState = !isPinned;
+    await appWindow.setAlwaysOnTop(newState);
+    setIsPinned(newState);
   };
 
   const priorityColors = {
@@ -207,141 +198,131 @@ function App() {
     low: '#48dbfb'
   };
 
-  // 根据当前分类筛选待办（使用 archived 字段）
   const filteredTodos = todos.filter(todo => 
     activeTab === 'pending' ? !todo.archived : todo.archived
+  );
+
+  const saveOrder = async (newTodos: Todo[], draggedItem: Todo) => {
+    const samePriority = newTodos.filter(t => t.priority === draggedItem.priority && !t.archived);
+    const orders: [string, number][] = samePriority.map((t, i) => [t.id, i * 10]);
+    try {
+      await invoke('update_todo_order', { orders });
+    } catch (error) {
+      console.error('Failed to save order:', error);
+      loadTodos(false);
+    }
+  };
+  const { containerRef: sortContainerRef, draggedId, dropTargetId } = useMouseSort(
+    filteredTodos,
+    (todo) => todo.id,
+    (newItems) => {
+      setTodos(prev => {
+        const archivedItems = prev.filter(t => t.archived);
+        const allTodos = activeTab === 'pending' 
+          ? [...newItems, ...archivedItems]
+          : [...archivedItems, ...newItems];
+        
+        const draggedItem = newItems.find(t => t.id === draggedId);
+        if (draggedItem) {
+          saveOrder(newItems, draggedItem);
+        }
+        
+        return allTodos;
+      });
+    }
   );
 
   const pendingCount = todos.filter(t => !t.archived).length;
   const completedCount = todos.filter(t => t.archived).length;
 
   return (
-    <div 
-      className="sticker-container"
-      onMouseDown={handleMouseDown}
-      onTouchStart={handleTouchStart}
-    >
-      {/* 便签头部 */}
-      <div className="sticker-header">
+    <div className="sticker-container">
+      {/* 头部 */}
+      <div className="sticker-header" onMouseDown={handleMouseDown}>
         <div className="header-left">
-          <button 
-            className={`pin-btn ${isPinned ? 'pinned' : ''}`}
-            onClick={togglePin}
-            title={isPinned ? '取消置顶' : '置顶窗口'}
-          >
-            <Pin size={14} className="pin-icon" />
+          <button className={`pin-btn ${isPinned ? 'pinned' : ''}`} onClick={togglePin}>
+            <Pin size={14} />
           </button>
           <span className="app-title">吐司便签</span>
         </div>
         <div className="header-right">
           <span className="shortcut-hint">Ctrl+O</span>
-          <button className="close-btn" onClick={closeWindow} title="隐藏 (Ctrl+O)">
+          <button className="close-btn" onClick={closeWindow}>
             <X size={14} />
           </button>
         </div>
       </div>
 
-      {/* 分类标签 */}
+      {/* 标签 */}
       <div className="tab-container">
-        <button 
-          className={`tab ${activeTab === 'pending' ? 'active' : ''}`}
-          onClick={() => setActiveTab('pending')}
-        >
-          未完成
-          {pendingCount > 0 && <span className="tab-badge">{pendingCount}</span>}
+        <button className={`tab ${activeTab === 'pending' ? 'active' : ''}`} onClick={() => setActiveTab('pending')}>
+          未完成 {pendingCount > 0 && <span className="tab-badge">{pendingCount}</span>}
         </button>
-        <button 
-          className={`tab ${activeTab === 'completed' ? 'active' : ''}`}
-          onClick={() => setActiveTab('completed')}
-        >
-          已完成
-          {completedCount > 0 && <span className="tab-badge">{completedCount}</span>}
+        <button className={`tab ${activeTab === 'completed' ? 'active' : ''}`} onClick={() => setActiveTab('completed')}>
+          已完成 {completedCount > 0 && <span className="tab-badge">{completedCount}</span>}
         </button>
       </div>
 
-      {/* 待办列表 */}
-      <div className="todo-list">
-        {filteredTodos.length === 0 && !isAdding ? (
-          <div className="empty-state">
-            <p>{activeTab === 'pending' ? '暂无待办事项' : '暂无已完成事项'}</p>
-            <p>{activeTab === 'pending' ? '点击 + 添加待办' : '完成任务后会显示在这里'}</p>
-          </div>
-        ) : (
-          <>
-            {filteredTodos.map((todo) => (
-              <div 
-                key={todo.id} 
-                className={`todo-item ${todo.archived ? 'completed' : ''}`}
-                style={{ borderLeftColor: priorityColors[todo.priority] }}
-              >
-                <button 
-                  className="checkbox"
-                  onClick={() => todo.archived ? restoreTodo(todo.id) : toggleTodo(todo.id)}
-                >
-                  {todo.archived && <Check size={12} />}
-                </button>
-                <div className="todo-content">
-                  {editingTodoId === todo.id ? (
-                    <div className="priority-editor">
-                      {(['high', 'medium', 'low'] as const).map((p) => (
-                        <button
-                          key={p}
-                          className={`priority-btn-inline ${todo.priority === p ? 'active' : ''}`}
-                          style={{ backgroundColor: priorityColors[p] }}
-                          onClick={() => updateTodoPriority(todo.id, p)}
-                        >
-                          {p === 'high' ? '高' : p === 'medium' ? '中' : '低'}
-                        </button>
-                      ))}
-                      <button 
-                        className="cancel-edit-btn"
-                        onClick={() => setEditingTodoId(null)}
-                      >
-                        取消
-                      </button>
-                    </div>
-                  ) : (
-                    <>
-                      <span className="todo-text">{todo.title}</span>
-                      {activeTab === 'completed' && todo.updated_at && (
-                        <span className="todo-date">
-                          完成日期：{new Date(todo.updated_at).getFullYear()}年{new Date(todo.updated_at).getMonth() + 1}月{new Date(todo.updated_at).getDate()}日
-                        </span>
-                      )}
-                    </>
-                  )}
-                </div>
-                <div className="todo-actions">
-                  {!todo.archived && editingTodoId !== todo.id && (
-                    <button 
-                      className="settings-btn"
-                      onClick={() => setEditingTodoId(todo.id)}
-                      title="设置优先级"
-                    >
-                      <Settings size={12} />
-                    </button>
-                  )}
-                  <button 
-                    className="delete-btn"
-                    onClick={() => deleteTodo(todo.id)}
-                    title="删除"
-                  >
-                    <Trash2 size={12} />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </>
-        )}
+      {/* 列表 */}
+      <div className="todo-list" ref={sortContainerRef}>
+        {filteredTodos.map((todo) => (
+          <div
+            key={todo.id}
+            data-todo-id={todo.id}
+            data-sortable={activeTab === 'pending' && !todo.archived}
+            className={`todo-item ${todo.archived ? 'completed' : ''} ${draggedId === todo.id ? 'dragging' : ''} ${dropTargetId === todo.id ? 'drag-over' : ''}`}
+            style={{ borderLeftColor: priorityColors[todo.priority] }}
+          >
+            <button className="checkbox" onClick={() => todo.archived ? restoreTodo(todo.id) : toggleTodo(todo.id)}>
+              {todo.archived && <Check size={12} />}
+            </button>
 
-        {/* 添加新待办 - 只在未完成分类显示 */}
+            <div className="todo-content">
+              {editingTodoId === todo.id ? (
+                <div className="priority-editor">
+                  {(['high', 'medium', 'low'] as const).map((p) => (
+                    <button
+                      key={p}
+                      className={`priority-btn-inline ${todo.priority === p ? 'active' : ''}`}
+                      style={{ backgroundColor: priorityColors[p] }}
+                      onClick={() => updateTodoPriority(todo.id, p)}
+                    >
+                      {p === 'high' ? '高' : p === 'medium' ? '中' : '低'}
+                    </button>
+                  ))}
+                  <button className="cancel-edit-btn" onClick={() => setEditingTodoId(null)}>取消</button>
+                </div>
+              ) : (
+                <>
+                  <span className="todo-text">{todo.title}</span>
+                  {activeTab === 'completed' && todo.updated_at && (
+                    <span className="todo-date">
+                      完成：{new Date(todo.updated_at).getFullYear()}年{new Date(todo.updated_at).getMonth() + 1}月{new Date(todo.updated_at).getDate()}日
+                    </span>
+                  )}
+                </>
+              )}
+            </div>
+            
+            <div className="todo-actions">
+              {!todo.archived && editingTodoId !== todo.id && (
+                <button className="settings-btn" onClick={() => setEditingTodoId(todo.id)}>
+                  <Settings size={12} />
+                </button>
+              )}
+              <button className="delete-btn" onClick={() => deleteTodo(todo.id)}>
+                <Trash2 size={12} />
+              </button>
+            </div>
+          </div>
+        ))}
+
         {isAdding && activeTab === 'pending' && (
           <div className="add-todo-form">
             <input
               type="text"
               value={newTodo}
               onChange={(e) => setNewTodo(e.target.value)}
-              onKeyDown={handleKeyDown}
               placeholder="输入待办事项..."
               autoFocus
               className="todo-input"
@@ -366,7 +347,6 @@ function App() {
         )}
       </div>
 
-      {/* 底部添加按钮 - 只在未完成分类显示 */}
       {!isAdding && activeTab === 'pending' && (
         <button className="add-btn" onClick={() => setIsAdding(true)}>
           <Plus size={20} />

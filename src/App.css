@@ -9,7 +9,7 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
   background: transparent;
   overflow: hidden;
-  user-select: none;
+  user-select: auto;
 }
 
 .sticker-container {
@@ -25,11 +25,14 @@ body {
   flex-direction: column;
   overflow: hidden;
   position: relative;
+  cursor: default;
+}
+
+.sticker-header {
   cursor: grab;
 }
 
-.sticker-container:active,
-.sticker-container.dragging {
+.sticker-header:active {
   cursor: grabbing;
 }
 
@@ -204,24 +207,10 @@ body {
   background: rgba(255, 255, 255, 0.7);
   border-radius: 6px;
   border-left: 3px solid #feca57;
-  transition: all 0.2s;
-  animation: slideIn 0.3s ease-out;
-}
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateX(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
 }
 
 .todo-item:hover {
   background: rgba(255, 255, 255, 0.9);
-  transform: translateX(2px);
 }
 
 .todo-item.completed {
@@ -231,6 +220,25 @@ body {
 .todo-item.completed .todo-text {
   text-decoration: line-through;
   color: #999;
+}
+
+/* 拖拽视觉反馈 */
+.todo-item.dragging {
+  opacity: 0.5;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.todo-item.drag-over {
+  background: rgba(139, 115, 85, 0.15);
+  border-left: 3px solid #8b7355;
+}
+
+.todo-item[draggable="true"] {
+  cursor: grab;
+}
+
+.todo-item[draggable="true"]:active {
+  cursor: grabbing;
 }
 
 .checkbox {
@@ -500,3 +508,24 @@ body {
 .cancel-edit-btn:hover {
   background: rgba(0, 0, 0, 0.2);
 }
+
+/* 拖拽样式 */
+.todo-item.dragging {
+  opacity: 0.5;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.todo-item.drag-over {
+  background: rgba(139, 115, 85, 0.15);
+  border-left: 3px solid #8b7355;
+}
+
+.todo-item[draggable="true"] {
+  cursor: grab;
+}
+
+.todo-item[draggable="true"]:active {
+  cursor: grabbing;
+}
+
+

@@ -21,6 +21,7 @@ pub async fn init_db(app: &AppHandle) -> Result<Db, sqlx::Error> {
 }
 
 async fn migrate(pool: &Db) -> Result<(), sqlx::Error> {
+    // Create todos table with sort_order field
     sqlx::query(
         r#"
         CREATE TABLE IF NOT EXISTS todos (
@@ -32,6 +33,7 @@ async fn migrate(pool: &Db) -> Result<(), sqlx::Error> {
             reminder_at TIMESTAMP,
             completed BOOLEAN NOT NULL DEFAULT 0,
             archived BOOLEAN NOT NULL DEFAULT 0,
+            sort_order INTEGER NOT NULL DEFAULT 0,
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
         )
@@ -39,6 +41,11 @@ async fn migrate(pool: &Db) -> Result<(), sqlx::Error> {
     )
     .execute(pool)
     .await?;
+
+    // Migration: Add sort_order column if it doesn't exist (for existing databases)
+    let _ = sqlx::query("ALTER TABLE todos ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0")
+        .execute(pool)
+        .await;
 
     sqlx::query(
         r#"
@@ -59,6 +66,7 @@ async fn migrate(pool: &Db) -> Result<(), sqlx::Error> {
         CREATE INDEX IF NOT EXISTS idx_todos_completed ON todos(completed);
         CREATE INDEX IF NOT EXISTS idx_todos_archived ON todos(archived);
         CREATE INDEX IF NOT EXISTS idx_todos_reminder ON todos(reminder_at);
+        CREATE INDEX IF NOT EXISTS idx_todos_sort_order ON todos(sort_order);
         "#,
     )
     .execute(pool)
