@@ -265,7 +265,14 @@ function App() {
                 >
                   {todo.archived && <Check size={12} />}
                 </button>
-                <span className="todo-text">{todo.title}</span>
+                <div className="todo-content">
+                  <span className="todo-text">{todo.title}</span>
+                  {activeTab === 'completed' && todo.updated_at && (
+                    <span className="todo-date">
+                      完成日期：{new Date(todo.updated_at).getFullYear()}年{new Date(todo.updated_at).getMonth() + 1}月{new Date(todo.updated_at).getDate()}日
+                    </span>
+                  )}
+                </div>
                 <button 
                   className="delete-btn"
                   onClick={() => deleteTodo(todo.id)}
