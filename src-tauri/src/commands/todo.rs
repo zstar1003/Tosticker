@@ -1,6 +1,7 @@
 use crate::db::Db;
 use crate::models::*;
 use chrono::Utc;
+use serde_json::json;
 use sqlx::Row;
 use tauri::{command, State};
 use uuid::Uuid;
@@ -63,18 +64,31 @@ pub async fn get_todos(db: State<'_, Db>, archived: bool) -> Result<Vec<Todo>, S
 pub async fn update_todo(db: State<'_, Db>, request: UpdateTodoRequest) -> Result<Todo, String> {
     let now = Utc::now();
 
-    // Simple update query for completed and archived fields
+    // Use simple fixed query that handles all optional fields with COALESCE
     let todo = sqlx::query_as::<_, Todo>(
         r#"
         UPDATE todos 
-        SET updated_at = ?1, completed = ?2, archived = ?3
-        WHERE id = ?4
+        SET 
+            updated_at = ?,
+            completed = COALESCE(?, completed),
+            archived = COALESCE(?, archived),
+            priority = COALESCE(?, priority),
+            title = COALESCE(?, title),
+            description = COALESCE(?, description),
+            due_date = COALESCE(?, due_date),
+            reminder_at = COALESCE(?, reminder_at)
+        WHERE id = ?
         RETURNING *
         "#,
     )
     .bind(now)
-    .bind(request.completed.unwrap_or(false))
-    .bind(request.archived.unwrap_or(false))
+    .bind(request.completed)
+    .bind(request.archived)
+    .bind(request.priority.as_ref())
+    .bind(request.title.as_ref())
+    .bind(request.description.as_ref())
+    .bind(request.due_date)
+    .bind(request.reminder_at)
     .bind(&request.id)
     .fetch_one(&*db)
     .await

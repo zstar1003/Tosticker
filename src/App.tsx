@@ -2,15 +2,17 @@ import { useState, useEffect, useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
-import { Plus, X, Check, Trash2, Pin, RotateCcw } from 'lucide-react';
+import { Plus, X, Check, Trash2, Pin, Settings } from 'lucide-react';
 import './App.css';
 
 interface Todo {
   id: string;
   title: string;
   completed: boolean;
+  archived: boolean;
   priority: 'high' | 'medium' | 'low';
   created_at: string;
+  updated_at?: string;
 }
 
 function App() {
@@ -20,6 +22,7 @@ function App() {
   const [priority, setPriority] = useState<'high' | 'medium' | 'low'>('medium');
   const [activeTab, setActiveTab] = useState<'pending' | 'completed'>('pending');
   const [isPinned, setIsPinned] = useState(true);
+  const [editingTodoId, setEditingTodoId] = useState<string | null>(null);
   const appWindow = getCurrentWebviewWindow();
 
   // 加载待办
@@ -161,6 +164,18 @@ function App() {
     }
   };
 
+  const updateTodoPriority = async (id: string, newPriority: 'high' | 'medium' | 'low') => {
+    try {
+      await invoke('update_todo', {
+        request: { id, priority: newPriority }
+      });
+      setEditingTodoId(null);
+      loadTodos(activeTab === 'completed');
+    } catch (error) {
+      console.error('Failed to update todo priority:', error);
+    }
+  };
+
   const closeWindow = () => {
     appWindow.hide();
   };
@@ -266,20 +281,54 @@ function App() {
                   {todo.archived && <Check size={12} />}
                 </button>
                 <div className="todo-content">
-                  <span className="todo-text">{todo.title}</span>
-                  {activeTab === 'completed' && todo.updated_at && (
-                    <span className="todo-date">
-                      完成日期：{new Date(todo.updated_at).getFullYear()}年{new Date(todo.updated_at).getMonth() + 1}月{new Date(todo.updated_at).getDate()}日
-                    </span>
+                  {editingTodoId === todo.id ? (
+                    <div className="priority-editor">
+                      {(['high', 'medium', 'low'] as const).map((p) => (
+                        <button
+                          key={p}
+                          className={`priority-btn-inline ${todo.priority === p ? 'active' : ''}`}
+                          style={{ backgroundColor: priorityColors[p] }}
+                          onClick={() => updateTodoPriority(todo.id, p)}
+                        >
+                          {p === 'high' ? '高' : p === 'medium' ? '中' : '低'}
+                        </button>
+                      ))}
+                      <button 
+                        className="cancel-edit-btn"
+                        onClick={() => setEditingTodoId(null)}
+                      >
+                        取消
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <span className="todo-text">{todo.title}</span>
+                      {activeTab === 'completed' && todo.updated_at && (
+                        <span className="todo-date">
+                          完成日期：{new Date(todo.updated_at).getFullYear()}年{new Date(todo.updated_at).getMonth() + 1}月{new Date(todo.updated_at).getDate()}日
+                        </span>
+                      )}
+                    </>
                   )}
                 </div>
-                <button 
-                  className="delete-btn"
-                  onClick={() => deleteTodo(todo.id)}
-                  title="删除"
-                >
-                  <Trash2 size={12} />
-                </button>
+                <div className="todo-actions">
+                  {!todo.archived && editingTodoId !== todo.id && (
+                    <button 
+                      className="settings-btn"
+                      onClick={() => setEditingTodoId(todo.id)}
+                      title="设置优先级"
+                    >
+                      <Settings size={12} />
+                    </button>
+                  )}
+                  <button 
+                    className="delete-btn"
+                    onClick={() => deleteTodo(todo.id)}
+                    title="删除"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                </div>
               </div>
             ))}
           </>

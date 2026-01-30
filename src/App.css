@@ -429,3 +429,74 @@ body {
 .todo-list::-webkit-scrollbar-thumb:hover {
   background: rgba(139, 115, 85, 0.5);
 }
+
+/* 待办操作按钮组 */
+.todo-actions {
+  display: flex;
+  gap: 4px;
+}
+
+/* 设置按钮 */
+.settings-btn {
+  background: none;
+  border: none;
+  color: #ccc;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  opacity: 0;
+  transition: all 0.2s;
+}
+
+.todo-item:hover .settings-btn {
+  opacity: 1;
+}
+
+.settings-btn:hover {
+  color: #8b7355;
+  background: rgba(139, 115, 85, 0.1);
+}
+
+/* 优先级编辑器 */
+.priority-editor {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.priority-btn-inline {
+  padding: 2px 6px;
+  border: none;
+  border-radius: 3px;
+  font-size: 10px;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: all 0.2s;
+  color: white;
+  font-weight: 500;
+}
+
+.priority-btn-inline.active {
+  opacity: 1;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.priority-btn-inline:hover {
+  opacity: 0.8;
+}
+
+/* 取消编辑按钮 */
+.cancel-edit-btn {
+  padding: 2px 6px;
+  border: none;
+  border-radius: 3px;
+  font-size: 10px;
+  cursor: pointer;
+  background: rgba(0, 0, 0, 0.1);
+  color: #666;
+  transition: all 0.2s;
+}
+
+.cancel-edit-btn:hover {
+  background: rgba(0, 0, 0, 0.2);
+}
