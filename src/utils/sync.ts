@@ -23,11 +23,11 @@ export const syncApi = {
     const filePath = await save({
       filters: [
         {
-          name: 'MindFlow Backup',
+          name: '吐司便签 Backup',
           extensions: ['json'],
         },
       ],
-      defaultPath: `mindflow-backup-${new Date().toISOString().split('T')[0]}.json`,
+      defaultPath: `tosticker-backup-${new Date().toISOString().split('T')[0]}.json`,
     });
 
     if (filePath) {
@@ -42,7 +42,7 @@ export const syncApi = {
     const selected = await open({
       filters: [
         {
-          name: 'MindFlow Backup',
+          name: '吐司便签 Backup',
           extensions: ['json'],
         },
       ],

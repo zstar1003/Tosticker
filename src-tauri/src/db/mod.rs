@@ -7,7 +7,7 @@ pub async fn init_db(app: &AppHandle) -> Result<Db, sqlx::Error> {
     let app_dir = app.path().app_data_dir().expect("Failed to get app data dir");
     std::fs::create_dir_all(&app_dir).expect("Failed to create app data dir");
     
-    let db_path = app_dir.join("mindflow.db");
+    let db_path = app_dir.join("tosticker.db");
     let db_url = format!("sqlite:{}", db_path.to_str().unwrap());
     
     let pool = SqlitePoolOptions::new()

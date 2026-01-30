@@ -1,5 +1,5 @@
 const ZHIPU_API_URL = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
-const SETTINGS_KEY = 'mindflow-ai-settings';
+const SETTINGS_KEY = 'tosticker-ai-settings';
 
 export interface AISettings {
   apiKey: string;

@@ -1,10 +1,10 @@
 [package]
-name = "mindflow-todo"
+name = "tosticker"
 version = "0.1.0"
 edition = "2021"
 
 [lib]
-name = "mindflow_todo_lib"
+name = "tosticker_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

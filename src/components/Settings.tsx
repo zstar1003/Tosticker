@@ -9,7 +9,7 @@ const DEFAULT_SETTINGS: AISettings = {
   apiKey: '',
 };
 
-const SETTINGS_KEY = 'mindflow-ai-settings';
+const SETTINGS_KEY = 'tosticker-ai-settings';
 
 interface SettingsPanelProps {
   isOpen: boolean;

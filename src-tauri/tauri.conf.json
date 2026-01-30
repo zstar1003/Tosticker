@@ -79,7 +79,7 @@
   },
   "plugins": {
     "sql": {
-      "preload": ["sqlite:mindflow.db"]
+      "preload": ["sqlite:tosticker.db"]
     }
   }
 }
