@@ -1,4 +1,4 @@
-/* 便签样式 */
+/* 便签样式 - 吐司便签 */
 * {
   margin: 0;
   padding: 0;
@@ -25,6 +25,12 @@ body {
   flex-direction: column;
   overflow: hidden;
   position: relative;
+  cursor: grab;
+}
+
+.sticker-container:active,
+.sticker-container.dragging {
+  cursor: grabbing;
 }
 
 /* 头部 */
@@ -35,14 +41,12 @@ body {
   padding: 10px 12px;
   background: rgba(255, 255, 255, 0.4);
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  -webkit-app-region: drag;
 }
 
 .header-left {
   display: flex;
   align-items: center;
   gap: 6px;
-  -webkit-app-region: no-drag;
 }
 
 .pin-icon {
@@ -60,7 +64,6 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  -webkit-app-region: no-drag;
 }
 
 .shortcut-hint {

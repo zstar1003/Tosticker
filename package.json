@@ -1,8 +1,8 @@
 {
-  "name": "mindflow-todo",
+  "name": "tosticker-todo",
   "version": "0.1.0",
-  "description": "轻量级 Todo 应用 - MindFlow (Bun 版本)",
-  "author": "MindFlow Team",
+  "description": "吐司便签 - 桌面便签待办应用",
+  "author": "ToSticker Team",
   "license": "MIT",
   "private": true,
   "type": "module",

@@ -1,8 +1,8 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "MindFlow",
+  "productName": "吐司便签",
   "version": "0.1.0",
-  "identifier": "com.mindflow.app",
+  "identifier": "com.tosticker.app",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:1420",
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "MindFlow",
+        "title": "吐司便签",
         "width": 320,
         "height": 480,
         "minWidth": 280,
@@ -48,7 +48,9 @@
             "core:window:default",
             "core:window:allow-show",
             "core:window:allow-hide",
-            "core:window:allow-set-focus"
+            "core:window:allow-set-focus",
+            "core:window:allow-start-dragging",
+            "core:window:allow-internal-toggle-maximize"
           ]
         }
       ]

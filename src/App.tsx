@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
@@ -42,6 +42,39 @@ function App() {
       unlisten.then(fn => fn());
     };
   }, [loadTodos]);
+
+  // 拖动处理 - 鼠标按下时立即开始拖动
+  const handleMouseDown = (e: React.MouseEvent) => {
+    // 如果点击的是按钮、输入框等交互元素，不启动拖动
+    const target = e.target as HTMLElement;
+    if (
+      target.tagName === 'BUTTON' ||
+      target.tagName === 'INPUT' ||
+      target.closest('button') ||
+      target.closest('input')
+    ) {
+      return;
+    }
+    
+    // 立即启动拖动
+    e.preventDefault();
+    appWindow.startDragging();
+  };
+
+  // 触摸拖动支持
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const target = e.target as HTMLElement;
+    if (
+      target.tagName === 'BUTTON' ||
+      target.tagName === 'INPUT' ||
+      target.closest('button') ||
+      target.closest('input')
+    ) {
+      return;
+    }
+    
+    appWindow.startDragging();
+  };
 
   const addTodo = async () => {
     if (!newTodo.trim()) return;
@@ -101,12 +134,16 @@ function App() {
   };
 
   return (
-    <div className="sticker-container">
-      {/* 便签头部 */}
+    <div 
+      className="sticker-container"
+      onMouseDown={handleMouseDown}
+      onTouchStart={handleTouchStart}
+    >
+      {/* 便签头部 - 这个区域总是可拖动 */}
       <div className="sticker-header">
         <div className="header-left">
           <Pin size={14} className="pin-icon" />
-          <span className="app-title">便签</span>
+          <span className="app-title">吐司便签</span>
         </div>
         <div className="header-right">
           <span className="shortcut-hint">Ctrl+O</span>
