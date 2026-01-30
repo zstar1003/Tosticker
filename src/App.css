@@ -92,6 +92,57 @@ body {
   color: #5d4e37;
 }
 
+/* 分类标签 */
+.tab-container {
+  display: flex;
+  padding: 8px 12px 0;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.4);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.tab {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  color: #8b7355;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 6px 6px 0 0;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  position: relative;
+}
+
+.tab:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.tab.active {
+  background: rgba(255, 255, 255, 0.9);
+  color: #5d4e37;
+  box-shadow: 0 -2px 0 #8b7355;
+}
+
+.tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  background: #8b7355;
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 9px;
+}
+
 /* 待办列表 */
 .todo-list {
   flex: 1;
@@ -178,6 +229,7 @@ body {
   background: #8b7355;
   border-color: #8b7355;
   color: white;
+  cursor: pointer;
 }
 
 .todo-text {

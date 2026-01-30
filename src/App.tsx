@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
-import { Plus, X, Check, Trash2, Pin } from 'lucide-react';
+import { Plus, X, Check, Trash2, Pin, RotateCcw } from 'lucide-react';
 import './App.css';
 
 interface Todo {
@@ -18,12 +18,13 @@ function App() {
   const [newTodo, setNewTodo] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [priority, setPriority] = useState<'high' | 'medium' | 'low'>('medium');
+  const [activeTab, setActiveTab] = useState<'pending' | 'completed'>('pending');
   const appWindow = getCurrentWebviewWindow();
 
   // 加载待办
-  const loadTodos = useCallback(async () => {
+  const loadTodos = useCallback(async (archived = false) => {
     try {
-      const result = await invoke<Todo[]>('get_todos', { archived: false });
+      const result = await invoke<Todo[]>('get_todos', { archived });
       setTodos(result);
     } catch (error) {
       console.error('Failed to load todos:', error);
@@ -31,7 +32,8 @@ function App() {
   }, []);
 
   useEffect(() => {
-    loadTodos();
+    // 根据当前分类加载对应数据
+    loadTodos(activeTab === 'completed');
     
     // 监听提醒事件
     const unlisten = listen('todo-reminder', (event) => {
@@ -41,39 +43,71 @@ function App() {
     return () => {
       unlisten.then(fn => fn());
     };
-  }, [loadTodos]);
+  }, [loadTodos, activeTab]);
 
-  // 拖动处理 - 鼠标按下时立即开始拖动
+  // 拖动处理 - 只在便签背景/头部区域启动拖动
   const handleMouseDown = (e: React.MouseEvent) => {
-    // 如果点击的是按钮、输入框等交互元素，不启动拖动
     const target = e.target as HTMLElement;
-    if (
+    
+    // 检查是否点击了交互元素（按钮、输入框、复选框等）
+    const isInteractive = 
       target.tagName === 'BUTTON' ||
       target.tagName === 'INPUT' ||
+      target.tagName === 'TEXTAREA' ||
       target.closest('button') ||
-      target.closest('input')
-    ) {
+      target.closest('input') ||
+      target.closest('.tab-container');
+    
+    // 如果点击的是交互元素，不启动拖动，也不阻止默认行为
+    if (isInteractive) {
       return;
     }
     
-    // 立即启动拖动
-    e.preventDefault();
-    appWindow.startDragging();
+    // 只在便签容器或头部区域启动拖动
+    const isDraggableArea = 
+      target.classList.contains('sticker-container') ||
+      target.classList.contains('sticker-header') ||
+      target.classList.contains('app-title') ||
+      target.classList.contains('pin-icon') ||
+      target.classList.contains('header-right') ||
+      target.classList.contains('header-left') ||
+      target.classList.contains('shortcut-hint') ||
+      target.closest('.sticker-header');
+    
+    if (isDraggableArea) {
+      e.preventDefault();
+      appWindow.startDragging();
+    }
   };
 
-  // 触摸拖动支持
   const handleTouchStart = (e: React.TouchEvent) => {
     const target = e.target as HTMLElement;
-    if (
+    
+    const isInteractive = 
       target.tagName === 'BUTTON' ||
       target.tagName === 'INPUT' ||
+      target.tagName === 'TEXTAREA' ||
       target.closest('button') ||
-      target.closest('input')
-    ) {
+      target.closest('input') ||
+      target.closest('.tab-container');
+    
+    if (isInteractive) {
       return;
     }
     
-    appWindow.startDragging();
+    const isDraggableArea = 
+      target.classList.contains('sticker-container') ||
+      target.classList.contains('sticker-header') ||
+      target.classList.contains('app-title') ||
+      target.classList.contains('pin-icon') ||
+      target.classList.contains('header-right') ||
+      target.classList.contains('header-left') ||
+      target.classList.contains('shortcut-hint') ||
+      target.closest('.sticker-header');
+    
+    if (isDraggableArea) {
+      appWindow.startDragging();
+    }
   };
 
   const addTodo = async () => {
@@ -88,7 +122,7 @@ function App() {
       });
       setNewTodo('');
       setIsAdding(false);
-      loadTodos();
+      loadTodos(activeTab === 'completed');
     } catch (error) {
       console.error('Failed to create todo:', error);
     }
@@ -97,16 +131,27 @@ function App() {
   const toggleTodo = async (id: string) => {
     try {
       await invoke('complete_todo', { id });
-      loadTodos();
+      loadTodos(activeTab === 'completed');
     } catch (error) {
       console.error('Failed to complete todo:', error);
+    }
+  };
+
+  const restoreTodo = async (id: string) => {
+    try {
+      await invoke('update_todo', { 
+        request: { id, completed: false, archived: false }
+      });
+      loadTodos(activeTab === 'completed');
+    } catch (error) {
+      console.error('Failed to restore todo:', error);
     }
   };
 
   const deleteTodo = async (id: string) => {
     try {
       await invoke('delete_todo', { id });
-      loadTodos();
+      loadTodos(activeTab === 'completed');
     } catch (error) {
       console.error('Failed to delete todo:', error);
     }
@@ -133,13 +178,21 @@ function App() {
     low: '#48dbfb'
   };
 
+  // 根据当前分类筛选待办（使用 archived 字段）
+  const filteredTodos = todos.filter(todo => 
+    activeTab === 'pending' ? !todo.archived : todo.archived
+  );
+
+  const pendingCount = todos.filter(t => !t.archived).length;
+  const completedCount = todos.filter(t => t.archived).length;
+
   return (
     <div 
       className="sticker-container"
       onMouseDown={handleMouseDown}
       onTouchStart={handleTouchStart}
     >
-      {/* 便签头部 - 这个区域总是可拖动 */}
+      {/* 便签头部 */}
       <div className="sticker-header">
         <div className="header-left">
           <Pin size={14} className="pin-icon" />
@@ -153,31 +206,50 @@ function App() {
         </div>
       </div>
 
+      {/* 分类标签 */}
+      <div className="tab-container">
+        <button 
+          className={`tab ${activeTab === 'pending' ? 'active' : ''}`}
+          onClick={() => setActiveTab('pending')}
+        >
+          未完成
+          {pendingCount > 0 && <span className="tab-badge">{pendingCount}</span>}
+        </button>
+        <button 
+          className={`tab ${activeTab === 'completed' ? 'active' : ''}`}
+          onClick={() => setActiveTab('completed')}
+        >
+          已完成
+          {completedCount > 0 && <span className="tab-badge">{completedCount}</span>}
+        </button>
+      </div>
+
       {/* 待办列表 */}
       <div className="todo-list">
-        {todos.length === 0 && !isAdding ? (
+        {filteredTodos.length === 0 && !isAdding ? (
           <div className="empty-state">
-            <p>按 Ctrl+O 快速打开</p>
-            <p>点击 + 添加待办</p>
+            <p>{activeTab === 'pending' ? '暂无待办事项' : '暂无已完成事项'}</p>
+            <p>{activeTab === 'pending' ? '点击 + 添加待办' : '完成任务后会显示在这里'}</p>
           </div>
         ) : (
           <>
-            {todos.map((todo) => (
+            {filteredTodos.map((todo) => (
               <div 
                 key={todo.id} 
-                className={`todo-item ${todo.completed ? 'completed' : ''}`}
+                className={`todo-item ${todo.archived ? 'completed' : ''}`}
                 style={{ borderLeftColor: priorityColors[todo.priority] }}
               >
                 <button 
                   className="checkbox"
-                  onClick={() => toggleTodo(todo.id)}
+                  onClick={() => todo.archived ? restoreTodo(todo.id) : toggleTodo(todo.id)}
                 >
-                  {todo.completed && <Check size={12} />}
+                  {todo.archived && <Check size={12} />}
                 </button>
                 <span className="todo-text">{todo.title}</span>
                 <button 
                   className="delete-btn"
                   onClick={() => deleteTodo(todo.id)}
+                  title="删除"
                 >
                   <Trash2 size={12} />
                 </button>
@@ -186,8 +258,8 @@ function App() {
           </>
         )}
 
-        {/* 添加新待办 */}
-        {isAdding && (
+        {/* 添加新待办 - 只在未完成分类显示 */}
+        {isAdding && activeTab === 'pending' && (
           <div className="add-todo-form">
             <input
               type="text"
@@ -218,8 +290,8 @@ function App() {
         )}
       </div>
 
-      {/* 底部添加按钮 */}
-      {!isAdding && (
+      {/* 底部添加按钮 - 只在未完成分类显示 */}
+      {!isAdding && activeTab === 'pending' && (
         <button className="add-btn" onClick={() => setIsAdding(true)}>
           <Plus size={20} />
         </button>

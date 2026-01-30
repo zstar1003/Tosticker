@@ -64,52 +64,23 @@ pub async fn get_todos(db: State<'_, Db>, archived: bool) -> Result<Vec<Todo>, S
 pub async fn update_todo(db: State<'_, Db>, request: UpdateTodoRequest) -> Result<Todo, String> {
     let now = Utc::now();
 
-    // Build dynamic update query
-    let mut query = String::from("UPDATE todos SET updated_at = ?1");
-    let mut params: Vec<serde_json::Value> = vec![json!(now)];
+    // Simple update query for completed and archived fields
+    let todo = sqlx::query_as::<_, Todo>(
+        r#"
+        UPDATE todos 
+        SET updated_at = ?1, completed = ?2, archived = ?3
+        WHERE id = ?4
+        RETURNING *
+        "#,
+    )
+    .bind(now)
+    .bind(request.completed.unwrap_or(false))
+    .bind(request.archived.unwrap_or(false))
+    .bind(&request.id)
+    .fetch_one(&*db)
+    .await
+    .map_err(|e| e.to_string())?;
 
-    if let Some(title) = &request.title {
-        query.push_str(", title = ?");
-        query.push_str(&(params.len() + 1).to_string());
-        params.push(json!(title));
-    }
-    if let Some(description) = &request.description {
-        query.push_str(", description = ?");
-        query.push_str(&(params.len() + 1).to_string());
-        params.push(json!(description));
-    }
-    if let Some(priority) = &request.priority {
-        query.push_str(", priority = ?");
-        query.push_str(&(params.len() + 1).to_string());
-        params.push(json!(priority));
-    }
-    if let Some(due_date) = &request.due_date {
-        query.push_str(", due_date = ?");
-        query.push_str(&(params.len() + 1).to_string());
-        params.push(json!(due_date));
-    }
-    if let Some(reminder_at) = &request.reminder_at {
-        query.push_str(", reminder_at = ?");
-        query.push_str(&(params.len() + 1).to_string());
-        params.push(json!(reminder_at));
-    }
-    if let Some(completed) = request.completed {
-        query.push_str(", completed = ?");
-        query.push_str(&(params.len() + 1).to_string());
-        params.push(json!(completed));
-    }
-
-    query.push_str(" WHERE id = ?");
-    query.push_str(&(params.len() + 1).to_string());
-    params.push(json!(request.id));
-    query.push_str(" RETURNING *");
-
-    let mut query_builder = sqlx::query_as::<_, Todo>(&query);
-    for param in params {
-        query_builder = query_builder.bind(param);
-    }
-
-    let todo = query_builder.fetch_one(&*db).await.map_err(|e| e.to_string())?;
     Ok(todo)
 }
 

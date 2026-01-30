@@ -41,6 +41,7 @@ pub struct UpdateTodoRequest {
     pub due_date: Option<DateTime<Utc>>,
     pub reminder_at: Option<DateTime<Utc>>,
     pub completed: Option<bool>,
+    pub archived: Option<bool>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
