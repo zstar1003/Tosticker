@@ -19,8 +19,6 @@
         "minWidth": 280,
         "minHeight": 320,
         "center": false,
-        "x": 100,
-        "y": 100,
         "resizable": true,
         "decorations": false,
         "transparent": true,

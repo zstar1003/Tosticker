@@ -28,16 +28,9 @@ body {
   cursor: default;
 }
 
-.sticker-header {
-  cursor: grab;
-}
-
-.sticker-header:active {
-  cursor: grabbing;
-}
-
 /* 头部 */
 .sticker-header {
+  cursor: grab;
   display: flex;
   justify-content: space-between;
   align-items: center;

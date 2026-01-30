@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 // import { listen } from '@tauri-apps/api/event';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
+
 import { Plus, X, Check, Trash2, Pin, Settings } from 'lucide-react';
 import './App.css';
 
@@ -120,12 +121,14 @@ function App() {
   useEffect(() => {
     loadTodos(activeTab === 'completed');
     appWindow.isAlwaysOnTop().then(setIsPinned);
+
+
   }, [loadTodos, activeTab, appWindow]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
-    // 只有点击头部按钮时才启动窗口拖拽
-    if (target.closest('button') && target.closest('.sticker-header')) {
+    // 点击头部非按钮区域时启动窗口拖拽
+    if (target.closest('.sticker-header') && !target.closest('button')) {
       e.preventDefault();
       appWindow.startDragging();
     }

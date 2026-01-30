@@ -52,6 +52,16 @@ pub fn run() {
             })
             .build())
         .setup(|app| {
+            // Initialize window position to top-right corner
+            if let Some(window) = app.get_webview_window("main") {
+                if let Some(monitor) = window.current_monitor().unwrap() {
+                    let monitor_size = monitor.size();
+                    let x = monitor_size.width as f64 - 320.0 - 20.0;
+                    let y = 20.0;
+                    let _ = window.set_position(tauri::Position::Logical(tauri::LogicalPosition { x, y }));
+                }
+            }
+
             // Register global shortcut Ctrl+O
             let ctrl_o = Shortcut::new(Some(Modifiers::CONTROL), Code::KeyO);
             app.global_shortcut()
