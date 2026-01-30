@@ -1,20 +1,28 @@
 {
   "name": "mindflow-todo",
   "version": "0.1.0",
-  "description": "轻量级 Todo 应用 - MindFlow",
+  "description": "轻量级 Todo 应用 - MindFlow (Bun 版本)",
   "author": "MindFlow Team",
   "license": "MIT",
   "private": true,
+  "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview",
-    "tauri": "tauri",
-    "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build",
-    "tauri:android:dev": "tauri android dev",
-    "tauri:ios:dev": "tauri ios dev",
-    "icon:generate": "cd src-tauri && cargo tauri icon ../public/icon.svg"
+    "dev": "bunx --bun vite",
+    "build": "bunx --bun tsc && bunx --bun vite build",
+    "preview": "bunx --bun vite preview",
+    "tauri": "bunx --bun tauri",
+    "tauri:dev": "bunx --bun tauri dev",
+    "tauri:build": "bunx --bun tauri build",
+    "tauri:android:dev": "bunx --bun tauri android dev",
+    "tauri:ios:dev": "bunx --bun tauri ios dev",
+    "tauri:android:build": "bunx --bun tauri android build",
+    "tauri:ios:build": "bunx --bun tauri ios build",
+    "icon:generate": "cd src-tauri && bunx --bun tauri icon ../public/icon.svg",
+    "setup": "bun install && bun run icon:generate",
+    "start": "bun run tauri:dev",
+    "clean": "rm -rf dist node_modules .bun-cache src-tauri/target src-tauri/gen",
+    "typecheck": "bunx --bun tsc --noEmit",
+    "lint": "bunx --bun eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.0.0",
@@ -38,5 +46,8 @@
     "tailwindcss": "^3.4.4",
     "typescript": "^5.0.2",
     "vite": "^5.0.0"
+  },
+  "engines": {
+    "bun": ">=1.0.0"
   }
 }

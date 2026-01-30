@@ -1,0 +1,28 @@
+# Bun 配置文件
+
+# 设置 registry 镜像（国内用户可加速）
+[install]
+# 使用 npm registry
+registry = "https://registry.npmjs.org"
+
+# 或者使用淘宝镜像（国内加速）
+# registry = "https://registry.npmmirror.com"
+
+# 缓存设置
+cache = true
+cacheDir = ".bun-cache"
+
+# 开发设置
+[run]
+# 环境变量
+env = { NODE_ENV = "development" }
+
+# 构建设置
+[build]
+# 输出目录
+outdir = "dist"
+
+# 测试设置
+[test]
+# 测试文件匹配
+include = ["**/*.test.ts", "**/*.test.tsx"]
