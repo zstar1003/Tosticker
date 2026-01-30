@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import { save, open } from '@tauri-apps/plugin-dialog';
-import { writeTextFile, readTextFile } from '@tauri-apps/api/fs';
+import { writeTextFile, readTextFile } from '@tauri-apps/plugin-fs';
 import { Todo, Inspiration } from '@/types';
 
 interface BackupData {

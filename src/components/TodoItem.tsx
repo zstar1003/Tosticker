@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Todo, UpdateTodoRequest } from '@/types';
 import { useAppStore } from '@/hooks/useStore';
 import { todoApi } from '@/utils/api';
-import { Check, Clock, Trash2, AlertCircle, Calendar, Bell, ChevronDown, ChevronUp, Edit2 } from 'lucide-react';
+import { Check, Clock, Trash2, AlertCircle, Calendar, Bell, Edit2 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 
@@ -12,7 +12,6 @@ interface TodoItemProps {
 
 export function TodoItem({ todo }: TodoItemProps) {
   const { updateTodo, removeTodo, completeTodo } = useAppStore();
-  const [isExpanded, setIsExpanded] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(todo.title);
   const [editDescription, setEditDescription] = useState(todo.description || '');
@@ -24,7 +23,6 @@ export function TodoItem({ todo }: TodoItemProps) {
   };
 
   const priority = priorityConfig[todo.priority];
-  const PriorityIcon = priority.icon;
 
   const handleComplete = async () => {
     try {

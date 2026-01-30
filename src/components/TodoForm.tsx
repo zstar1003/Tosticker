@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { CreateTodoRequest } from '@/types';
 import { useAppStore } from '@/hooks/useStore';
 import { todoApi } from '@/utils/api';
-import { X, Calendar, Bell, AlertCircle } from 'lucide-react';
+import { X, Calendar, Bell } from 'lucide-react';
 import { format, addDays, set } from 'date-fns';
 
 interface TodoFormProps {

@@ -107,9 +107,9 @@ function App() {
   const [priority, setPriority] = useState<'high' | 'medium' | 'low'>('medium');
   const [activeTab, setActiveTab] = useState<'pending' | 'completed'>('pending');
   const [isPinned, setIsPinned] = useState(true);
-  const [editingTodoId, setEditingTodoId] = useState<string | null>(null);
   const [contentEditingId, setContentEditingId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
+  const [editPriority, setEditPriority] = useState<'high' | 'medium' | 'low'>('medium');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [aiSettings, setAiSettings] = useState<AISettings | null>(null);
   const [isAiParsing, setIsAiParsing] = useState(false);
@@ -187,20 +187,10 @@ function App() {
     }
   };
 
-  const updateTodoPriority = async (id: string, newPriority: 'high' | 'medium' | 'low') => {
-    try {
-      await invoke('update_todo', { request: { id, priority: newPriority } });
-      setEditingTodoId(null);
-      loadTodos(activeTab === 'completed');
-    } catch (error) {
-      console.error('Failed to update priority:', error);
-    }
-  };
-
   const updateTodoContent = async (id: string) => {
     if (!editContent.trim()) return;
     try {
-      await invoke('update_todo', { request: { id, title: editContent.trim() } });
+      await invoke('update_todo', { request: { id, title: editContent.trim(), priority: editPriority } });
       setContentEditingId(null);
       setEditContent('');
       loadTodos(activeTab === 'completed');
@@ -328,51 +318,27 @@ function App() {
             </button>
 
             <div className="todo-content">
-              {editingTodoId === todo.id ? (
-                <div className="priority-editor">
-                  {(['high', 'medium', 'low'] as const).map((p) => (
-                    <button
-                      key={p}
-                      className={`priority-btn-inline ${todo.priority === p ? 'active' : ''}`}
-                      style={{ backgroundColor: priorityColors[p] }}
-                      onClick={() => updateTodoPriority(todo.id, p)}
-                    >
-                      {p === 'high' ? '高' : p === 'medium' ? '中' : '低'}
-                    </button>
-                  ))}
-                  <button className="cancel-edit-btn" onClick={() => setEditingTodoId(null)}>取消</button>
-                </div>
-              ) : (
-                <>
-                  <span className="todo-text">{todo.title}</span>
-                  {activeTab === 'completed' && todo.updated_at && (
-                    <span className="todo-date">
-                      完成：{new Date(todo.updated_at).getFullYear()}年{new Date(todo.updated_at).getMonth() + 1}月{new Date(todo.updated_at).getDate()}日
-                    </span>
-                  )}
-                </>
+              <span className="todo-text">{todo.title}</span>
+              {activeTab === 'completed' && todo.updated_at && (
+                <span className="todo-date">
+                  完成：{new Date(todo.updated_at).getFullYear()}年{new Date(todo.updated_at).getMonth() + 1}月{new Date(todo.updated_at).getDate()}日
+                </span>
               )}
             </div>
             
             <div className="todo-actions">
               {!todo.archived && (
-                <>
-                  <button
-                    className="edit-btn"
-                    onClick={() => {
-                      setContentEditingId(todo.id);
-                      setEditContent(todo.title);
-                    }}
-                    title="编辑内容"
-                  >
-                    <Edit2 size={12} />
-                  </button>
-                  {editingTodoId !== todo.id && (
-                    <button className="settings-btn" onClick={() => setEditingTodoId(todo.id)}>
-                      <Settings size={12} />
-                    </button>
-                  )}
-                </>
+                <button
+                  className="edit-btn"
+                  onClick={() => {
+                    setContentEditingId(todo.id);
+                    setEditContent(todo.title);
+                    setEditPriority(todo.priority);
+                  }}
+                  title="编辑"
+                >
+                  <Edit2 size={12} />
+                </button>
               )}
               <button className="delete-btn" onClick={() => deleteTodo(todo.id)}>
                 <Trash2 size={12} />
@@ -403,6 +369,18 @@ function App() {
                       }
                     }}
                   />
+                  <div className="priority-selector" style={{ marginTop: '8px' }}>
+                    {(['high', 'medium', 'low'] as const).map((p) => (
+                      <button
+                        key={p}
+                        className={`priority-btn ${editPriority === p ? 'active' : ''}`}
+                        style={{ backgroundColor: priorityColors[p] }}
+                        onClick={() => setEditPriority(p)}
+                      >
+                        {p === 'high' ? '高' : p === 'medium' ? '中' : '低'}
+                      </button>
+                    ))}
+                  </div>
                   <div className="form-actions">
                     <button className="btn-primary" onClick={() => updateTodoContent(todo.id)}>保存</button>
                     <button className="btn-secondary" onClick={() => {setContentEditingId(null); setEditContent('');}}>取消</button>
