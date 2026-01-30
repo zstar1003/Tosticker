@@ -1,5 +1,4 @@
 use tauri::{command, AppHandle, Manager};
-use std::path::PathBuf;
 
 #[command]
 pub fn get_database_path(app: AppHandle) -> Result<String, String> {

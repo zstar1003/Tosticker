@@ -1,59 +1,192 @@
-import { useEffect } from 'react';
-import { Sidebar } from './components/Sidebar';
-import { TodoList } from './components/TodoList';
-import { InspirationList } from './components/InspirationList';
-import { ArchivedTodos } from './components/ArchivedTodos';
-import { useAppStore } from './hooks/useStore';
+import { useState, useEffect, useCallback } from 'react';
+import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
-import { isPermissionGranted, requestPermission, sendNotification } from '@tauri-apps/plugin-notification';
+import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
+import { Plus, X, Check, Trash2, Pin } from 'lucide-react';
+import './App.css';
+
+interface Todo {
+  id: string;
+  title: string;
+  completed: boolean;
+  priority: 'high' | 'medium' | 'low';
+  created_at: string;
+}
 
 function App() {
-  const { currentView, loadTodos, loadInspirations, refreshStats, loadArchivedTodos } = useAppStore();
+  const [todos, setTodos] = useState<Todo[]>([]);
+  const [newTodo, setNewTodo] = useState('');
+  const [isAdding, setIsAdding] = useState(false);
+  const [priority, setPriority] = useState<'high' | 'medium' | 'low'>('medium');
+  const appWindow = getCurrentWebviewWindow();
+
+  // 加载待办
+  const loadTodos = useCallback(async () => {
+    try {
+      const result = await invoke<Todo[]>('get_todos', { archived: false });
+      setTodos(result);
+    } catch (error) {
+      console.error('Failed to load todos:', error);
+    }
+  }, []);
 
   useEffect(() => {
-    // Initial data load
     loadTodos();
-    loadInspirations();
-    refreshStats();
-    loadArchivedTodos();
+    
+    // 监听提醒事件
+    const unlisten = listen('todo-reminder', (event) => {
+      console.log('Reminder:', event.payload);
+    });
+    
+    return () => {
+      unlisten.then(fn => fn());
+    };
+  }, [loadTodos]);
 
-    // Setup notification listener
-    const setupNotifications = async () => {
-      let permissionGranted = await isPermissionGranted();
-      if (!permissionGranted) {
-        const permission = await requestPermission();
-        permissionGranted = permission === 'granted';
-      }
-
-      // Listen for todo reminders from backend
-      const unlisten = await listen('todo-reminder', (event) => {
-        const todo = event.payload as { title: string; description?: string };
-        if (permissionGranted) {
-          sendNotification({
-            title: '⏰ 待办提醒',
-            body: todo.title,
-          });
+  const addTodo = async () => {
+    if (!newTodo.trim()) return;
+    
+    try {
+      await invoke('create_todo', {
+        request: {
+          title: newTodo.trim(),
+          priority,
         }
       });
+      setNewTodo('');
+      setIsAdding(false);
+      loadTodos();
+    } catch (error) {
+      console.error('Failed to create todo:', error);
+    }
+  };
 
-      return unlisten;
-    };
+  const toggleTodo = async (id: string) => {
+    try {
+      await invoke('complete_todo', { id });
+      loadTodos();
+    } catch (error) {
+      console.error('Failed to complete todo:', error);
+    }
+  };
 
-    const unlistenPromise = setupNotifications();
+  const deleteTodo = async (id: string) => {
+    try {
+      await invoke('delete_todo', { id });
+      loadTodos();
+    } catch (error) {
+      console.error('Failed to delete todo:', error);
+    }
+  };
 
-    return () => {
-      unlistenPromise.then((unlisten) => unlisten());
-    };
-  }, [loadTodos, loadInspirations, refreshStats, loadArchivedTodos]);
+  const closeWindow = () => {
+    appWindow.hide();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      addTodo();
+    }
+    if (e.key === 'Escape') {
+      setIsAdding(false);
+      setNewTodo('');
+    }
+  };
+
+  const priorityColors = {
+    high: '#ff6b6b',
+    medium: '#feca57', 
+    low: '#48dbfb'
+  };
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
-      <Sidebar />
-      <main className="flex-1 overflow-hidden">
-        {currentView === 'todos' && <TodoList />}
-        {currentView === 'inspirations' && <InspirationList />}
-        {currentView === 'archived' && <ArchivedTodos />}
-      </main>
+    <div className="sticker-container">
+      {/* 便签头部 */}
+      <div className="sticker-header">
+        <div className="header-left">
+          <Pin size={14} className="pin-icon" />
+          <span className="app-title">便签</span>
+        </div>
+        <div className="header-right">
+          <span className="shortcut-hint">Ctrl+O</span>
+          <button className="close-btn" onClick={closeWindow} title="隐藏 (Ctrl+O)">
+            <X size={14} />
+          </button>
+        </div>
+      </div>
+
+      {/* 待办列表 */}
+      <div className="todo-list">
+        {todos.length === 0 && !isAdding ? (
+          <div className="empty-state">
+            <p>按 Ctrl+O 快速打开</p>
+            <p>点击 + 添加待办</p>
+          </div>
+        ) : (
+          <>
+            {todos.map((todo) => (
+              <div 
+                key={todo.id} 
+                className={`todo-item ${todo.completed ? 'completed' : ''}`}
+                style={{ borderLeftColor: priorityColors[todo.priority] }}
+              >
+                <button 
+                  className="checkbox"
+                  onClick={() => toggleTodo(todo.id)}
+                >
+                  {todo.completed && <Check size={12} />}
+                </button>
+                <span className="todo-text">{todo.title}</span>
+                <button 
+                  className="delete-btn"
+                  onClick={() => deleteTodo(todo.id)}
+                >
+                  <Trash2 size={12} />
+                </button>
+              </div>
+            ))}
+          </>
+        )}
+
+        {/* 添加新待办 */}
+        {isAdding && (
+          <div className="add-todo-form">
+            <input
+              type="text"
+              value={newTodo}
+              onChange={(e) => setNewTodo(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="输入待办事项..."
+              autoFocus
+              className="todo-input"
+            />
+            <div className="priority-selector">
+              {(['high', 'medium', 'low'] as const).map((p) => (
+                <button
+                  key={p}
+                  className={`priority-btn ${priority === p ? 'active' : ''}`}
+                  style={{ backgroundColor: priorityColors[p] }}
+                  onClick={() => setPriority(p)}
+                >
+                  {p === 'high' ? '高' : p === 'medium' ? '中' : '低'}
+                </button>
+              ))}
+            </div>
+            <div className="form-actions">
+              <button className="btn-primary" onClick={addTodo}>添加</button>
+              <button className="btn-secondary" onClick={() => {setIsAdding(false); setNewTodo('');}}>取消</button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 底部添加按钮 */}
+      {!isAdding && (
+        <button className="add-btn" onClick={() => setIsAdding(true)}>
+          <Plus size={20} />
+        </button>
+      )}
     </div>
   );
 }

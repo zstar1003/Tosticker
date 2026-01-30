@@ -12,16 +12,22 @@
   "app": {
     "windows": [
       {
+        "label": "main",
         "title": "MindFlow",
-        "width": 1200,
-        "height": 800,
-        "minWidth": 800,
-        "minHeight": 600,
-        "center": true,
+        "width": 320,
+        "height": 480,
+        "minWidth": 280,
+        "minHeight": 320,
+        "center": false,
+        "x": 100,
+        "y": 100,
         "resizable": true,
-        "decorations": true,
-        "transparent": false,
-        "titleBarStyle": "Overlay"
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "skipTaskbar": false,
+        "visible": true,
+        "shadow": true
       }
     ],
     "security": {
@@ -34,7 +40,15 @@
             "core:default",
             "sql:default",
             "sql:allow-execute",
-            "notification:default"
+            "notification:default",
+            "global-shortcut:default",
+            "global-shortcut:allow-is-registered",
+            "global-shortcut:allow-register",
+            "global-shortcut:allow-unregister",
+            "core:window:default",
+            "core:window:allow-show",
+            "core:window:allow-hide",
+            "core:window:allow-set-focus"
           ]
         }
       ]

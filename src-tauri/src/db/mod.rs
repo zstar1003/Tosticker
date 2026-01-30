@@ -1,5 +1,4 @@
 use sqlx::{sqlite::SqlitePoolOptions, Pool, Sqlite};
-use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
 
 pub type Db = Pool<Sqlite>;
