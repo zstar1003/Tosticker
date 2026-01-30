@@ -361,15 +361,15 @@ body {
 
 .btn-ai-inline {
   position: absolute;
-  right: 6px;
+  right: 8px;
   top: 50%;
   transform: translateY(-50%);
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
+  background: transparent;
+  color: #8b7355;
+  border: 1px solid #e0d5c0;
   border-radius: 4px;
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -378,12 +378,13 @@ body {
 }
 
 .btn-ai-inline:hover:not(:disabled) {
-  transform: translateY(-50%) scale(1.1);
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+  background: #f5f0e6;
+  border-color: #8b7355;
+  color: #6d5a43;
 }
 
 .btn-ai-inline:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
