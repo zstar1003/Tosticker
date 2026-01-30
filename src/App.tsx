@@ -21,7 +21,8 @@ function useMouseSort<T>(items: T[], getId: (item: T) => string, onReorder: (ite
     const handleMouseDown = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       const item = target.closest('[data-sortable="true"]') as HTMLElement;
-      if (!item || target.closest('button')) return;
+      // 如果点击在按钮、输入框、弹窗或任何表单元素上，不触发拖拽
+      if (!item || target.closest('button') || target.closest('input') || target.closest('textarea') || target.closest('.modal-overlay')) return;
 
       e.preventDefault();
       const id = item.getAttribute('data-todo-id');
