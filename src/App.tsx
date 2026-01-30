@@ -206,11 +206,6 @@ function App() {
   const handleAIParse = async () => {
     if (!newTodo.trim() || !aiSettings) return;
 
-    if (!aiSettings.enabled) {
-      setAiError('AI功能未启用，请在设置中开启');
-      return;
-    }
-
     if (!aiSettings.apiKey) {
       setAiError('请先配置API密钥');
       return;
@@ -362,38 +357,33 @@ function App() {
           <div className="modal-overlay" onClick={() => {setIsAdding(false); setNewTodo(''); setAiError(null);}}>
             <div className="add-todo-form" onClick={(e) => e.stopPropagation()}>
               <h3 style={{ margin: '0 0 12px 0', fontSize: '16px', color: '#5d4e37' }}>添加新待办</h3>
-              <input
-                type="text"
-                value={newTodo}
-                onChange={(e) => setNewTodo(e.target.value)}
-                placeholder="输入待办事项..."
-                autoFocus
-                className="todo-input"
-              />
-              {aiSettings?.enabled && (
-                <div className="ai-parse-section">
+              <div className="input-with-ai">
+                <input
+                  type="text"
+                  value={newTodo}
+                  onChange={(e) => setNewTodo(e.target.value)}
+                  placeholder={aiSettings?.apiKey ? "输入待办事项..." : "输入待办事项..."}
+                  autoFocus
+                  className="todo-input-with-ai"
+                />
+                {aiSettings?.apiKey && (
                   <button
-                    className="btn-ai-parse"
+                    className="btn-ai-inline"
                     onClick={handleAIParse}
                     disabled={isAiParsing || !newTodo.trim()}
+                    title="AI优化"
                   >
                     {isAiParsing ? (
-                      <>
-                        <Loader2 size={14} className="spin" />
-                        AI解析中...
-                      </>
+                      <Loader2 size={16} className="spin" />
                     ) : (
-                      <>
-                        <Sparkles size={14} />
-                        AI解析
-                      </>
+                      <Sparkles size={16} />
                     )}
                   </button>
-                  {aiError && (
-                    <div className="ai-error-message">
-                      {aiError}
-                    </div>
-                  )}
+                )}
+              </div>
+              {aiError && (
+                <div className="ai-error-message">
+                  {aiError}
                 </div>
               )}
               <div className="priority-selector">

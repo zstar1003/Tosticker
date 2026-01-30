@@ -336,6 +336,57 @@ body {
   to { opacity: 1; transform: scale(1); }
 }
 
+.input-with-ai {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.todo-input-with-ai {
+  flex: 1;
+  border: 1px solid #e0d5c0;
+  border-radius: 6px;
+  padding: 10px 40px 10px 12px;
+  font-size: 13px;
+  background: white;
+  outline: none;
+  transition: all 0.2s;
+  width: 100%;
+}
+
+.todo-input-with-ai:focus {
+  border-color: #8b7355;
+  box-shadow: 0 0 0 3px rgba(139, 115, 85, 0.1);
+}
+
+.btn-ai-inline {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-ai-inline:hover:not(:disabled) {
+  transform: translateY(-50%) scale(1.1);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+}
+
+.btn-ai-inline:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .todo-input {
   border: 1px solid #e0d5c0;
   border-radius: 6px;
