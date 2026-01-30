@@ -349,7 +349,6 @@ function App() {
             {contentEditingId === todo.id && (
               <div
                 className="modal-overlay"
-                onClick={() => {setContentEditingId(null); setEditContent('');}}
                 onMouseDown={(e) => e.stopPropagation()}
               >
                 <div className="add-todo-form" onClick={(e) => e.stopPropagation()}>
@@ -393,7 +392,7 @@ function App() {
         ))}
 
         {isAdding && activeTab === 'pending' && (
-          <div className="modal-overlay" onClick={() => {setIsAdding(false); setNewTodo(''); setAiError(null);}}>
+          <div className="modal-overlay">
             <div className="add-todo-form" onClick={(e) => e.stopPropagation()}>
               <h3 style={{ margin: '0 0 12px 0', fontSize: '16px', color: '#5d4e37' }}>添加新待办</h3>
               <div className="input-with-ai">
