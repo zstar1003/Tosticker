@@ -559,6 +559,27 @@ body {
   gap: 4px;
 }
 
+/* 编辑按钮 */
+.edit-btn {
+  background: none;
+  border: none;
+  color: #ccc;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  opacity: 0;
+  transition: all 0.2s;
+}
+
+.todo-item:hover .edit-btn {
+  opacity: 1;
+}
+
+.edit-btn:hover {
+  color: #8b7355;
+  background: rgba(139, 115, 85, 0.1);
+}
+
 /* 设置按钮 */
 .settings-btn {
   background: none;

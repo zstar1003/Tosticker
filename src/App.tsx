@@ -3,7 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 // import { listen } from '@tauri-apps/api/event';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 
-import { Plus, X, Check, Trash2, Pin, Settings, Sparkles, Loader2 } from 'lucide-react';
+import { Plus, X, Check, Trash2, Pin, Settings, Sparkles, Loader2, Edit2 } from 'lucide-react';
 import './App.css';
 import { SettingsPanel } from './components/Settings';
 import { parseTodoWithAI, getAISettings, AISettings } from './utils/ai';
@@ -108,6 +108,8 @@ function App() {
   const [activeTab, setActiveTab] = useState<'pending' | 'completed'>('pending');
   const [isPinned, setIsPinned] = useState(true);
   const [editingTodoId, setEditingTodoId] = useState<string | null>(null);
+  const [contentEditingId, setContentEditingId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState('');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [aiSettings, setAiSettings] = useState<AISettings | null>(null);
   const [isAiParsing, setIsAiParsing] = useState(false);
@@ -192,6 +194,18 @@ function App() {
       loadTodos(activeTab === 'completed');
     } catch (error) {
       console.error('Failed to update priority:', error);
+    }
+  };
+
+  const updateTodoContent = async (id: string) => {
+    if (!editContent.trim()) return;
+    try {
+      await invoke('update_todo', { request: { id, title: editContent.trim() } });
+      setContentEditingId(null);
+      setEditContent('');
+      loadTodos(activeTab === 'completed');
+    } catch (error) {
+      console.error('Failed to update todo content:', error);
     }
   };
 
@@ -341,15 +355,61 @@ function App() {
             </div>
             
             <div className="todo-actions">
-              {!todo.archived && editingTodoId !== todo.id && (
-                <button className="settings-btn" onClick={() => setEditingTodoId(todo.id)}>
-                  <Settings size={12} />
-                </button>
+              {!todo.archived && (
+                <>
+                  <button
+                    className="edit-btn"
+                    onClick={() => {
+                      setContentEditingId(todo.id);
+                      setEditContent(todo.title);
+                    }}
+                    title="编辑内容"
+                  >
+                    <Edit2 size={12} />
+                  </button>
+                  {editingTodoId !== todo.id && (
+                    <button className="settings-btn" onClick={() => setEditingTodoId(todo.id)}>
+                      <Settings size={12} />
+                    </button>
+                  )}
+                </>
               )}
               <button className="delete-btn" onClick={() => deleteTodo(todo.id)}>
                 <Trash2 size={12} />
               </button>
             </div>
+
+            {contentEditingId === todo.id && (
+              <div
+                className="modal-overlay"
+                onClick={() => {setContentEditingId(null); setEditContent('');}}
+                onMouseDown={(e) => e.stopPropagation()}
+              >
+                <div className="add-todo-form" onClick={(e) => e.stopPropagation()}>
+                  <h3 style={{ margin: '0 0 12px 0', fontSize: '16px', color: '#5d4e37' }}>编辑待办</h3>
+                  <input
+                    type="text"
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                    placeholder="编辑待办事项..."
+                    autoFocus
+                    className="todo-input"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        updateTodoContent(todo.id);
+                      } else if (e.key === 'Escape') {
+                        setContentEditingId(null);
+                        setEditContent('');
+                      }
+                    }}
+                  />
+                  <div className="form-actions">
+                    <button className="btn-primary" onClick={() => updateTodoContent(todo.id)}>保存</button>
+                    <button className="btn-secondary" onClick={() => {setContentEditingId(null); setEditContent('');}}>取消</button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         ))}
 
