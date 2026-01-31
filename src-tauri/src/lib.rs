@@ -52,13 +52,19 @@ pub fn run() {
             })
             .build())
         .setup(|app| {
-            // Initialize window position to top-right corner
             if let Some(window) = app.get_webview_window("main") {
                 if let Ok(Some(monitor)) = window.current_monitor() {
                     let monitor_size = monitor.size();
                     let x = monitor_size.width as f64 - 320.0 - 20.0;
                     let y = 20.0;
                     let _ = window.set_position(tauri::Position::Logical(tauri::LogicalPosition { x, y }));
+                    // 延迟显示窗口，等待 webview 完成初始化
+                    // 避免白屏闪烁
+                    let window_clone = window.clone();
+                    std::thread::spawn(move || {
+                        std::thread::sleep(std::time::Duration::from_millis(300));
+                        let _ = window_clone.show();
+                    });
                 }
             }
 

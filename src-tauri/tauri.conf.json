@@ -21,10 +21,10 @@
         "center": false,
         "resizable": true,
         "decorations": false,
-        "transparent": true,
+        "transparent": false,
         "alwaysOnTop": true,
         "skipTaskbar": false,
-        "visible": true,
+        "visible": false,
         "shadow": true
       }
     ],
