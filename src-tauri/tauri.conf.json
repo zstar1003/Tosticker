@@ -1,6 +1,6 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "吐司便签",
+  "productName": "ToSticker",
   "version": "0.1.0",
   "identifier": "com.tosticker.app",
   "build": {
@@ -57,7 +57,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["dmg", "app", "msi", "appimage", "deb"],
+    "targets": ["dmg", "app", "msi", "nsis", "appimage", "deb"],
     "category": "Productivity",
     "icon": [
       "icons/32x32.png",
@@ -71,6 +71,13 @@
       "minimumSystemVersion": "10.13",
       "signingIdentity": null,
       "entitlements": null
+    },
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser",
+        "languages": ["SimpChinese", "English"],
+        "displayLanguageSelector": false
+      }
     },
     "iOS": {
       "developmentTeam": null,
