@@ -10,6 +10,18 @@ const DEFAULT_SETTINGS: AISettings = {
 };
 
 const SETTINGS_KEY = 'tosticker-ai-settings';
+const OLD_SETTINGS_KEY = 'mindflow-ai-settings';
+
+function migrateOldSettings(): void {
+  const oldSettings = localStorage.getItem(OLD_SETTINGS_KEY);
+  if (oldSettings) {
+    const newSettings = localStorage.getItem(SETTINGS_KEY);
+    if (!newSettings) {
+      localStorage.setItem(SETTINGS_KEY, oldSettings);
+      console.log('AI settings migrated from old key');
+    }
+  }
+}
 
 interface SettingsPanelProps {
   isOpen: boolean;
@@ -23,6 +35,7 @@ export function useSettings() {
   useEffect(() => {
     const loadSettings = () => {
       try {
+        migrateOldSettings();
         const stored = localStorage.getItem(SETTINGS_KEY);
         if (stored) {
           const parsed = JSON.parse(stored);

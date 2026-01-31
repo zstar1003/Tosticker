@@ -1,5 +1,6 @@
 const ZHIPU_API_URL = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
 const SETTINGS_KEY = 'tosticker-ai-settings';
+const OLD_SETTINGS_KEY = 'mindflow-ai-settings';
 
 export interface AISettings {
   apiKey: string;
@@ -10,7 +11,19 @@ export interface AIParseResult {
   priority: 'high' | 'medium' | 'low';
 }
 
+function migrateOldSettings(): void {
+  const oldSettings = localStorage.getItem(OLD_SETTINGS_KEY);
+  if (oldSettings) {
+    const newSettings = localStorage.getItem(SETTINGS_KEY);
+    if (!newSettings) {
+      localStorage.setItem(SETTINGS_KEY, oldSettings);
+      console.log('AI settings migrated from old key');
+    }
+  }
+}
+
 export function getAISettings(): AISettings {
+  migrateOldSettings();
   const saved = localStorage.getItem(SETTINGS_KEY);
   if (saved) {
     return JSON.parse(saved);

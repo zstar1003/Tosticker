@@ -404,20 +404,19 @@ function App() {
                   autoFocus
                   className="todo-input-with-ai"
                 />
-                {aiSettings?.apiKey && (
-                  <button
-                    className="btn-ai-inline"
-                    onClick={handleAIParse}
-                    disabled={isAiParsing || !newTodo.trim()}
-                    title="AI优化"
-                  >
-                    {isAiParsing ? (
-                      <Loader2 size={16} className="spin" />
-                    ) : (
-                      <Sparkles size={16} />
-                    )}
-                  </button>
-                )}
+                <button
+                  className="btn-ai-inline"
+                  onClick={handleAIParse}
+                  disabled={isAiParsing || !newTodo.trim()}
+                  title={aiSettings?.apiKey ? "AI优化" : "请先配置AI API Key"}
+                  style={{ opacity: aiSettings?.apiKey ? 1 : 0.5 }}
+                >
+                  {isAiParsing ? (
+                    <Loader2 size={16} className="spin" />
+                  ) : (
+                    <Sparkles size={16} />
+                  )}
+                </button>
               </div>
               {aiError && (
                 <div className="ai-error-message">
