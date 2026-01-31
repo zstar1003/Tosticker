@@ -1,0 +1,241 @@
+name: 'Publish Release'
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '版本号 (例如: 0.1.0)'
+        required: true
+        default: '0.1.0'
+  push:
+    tags:
+      - 'v*'
+    branches:
+      - release
+
+permissions:
+  contents: write
+
+jobs:
+  # 创建 Release Draft
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      release_id: ${{ steps.create-release.outputs.id }}
+      release_upload_url: ${{ steps.create-release.outputs.upload_url }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Get version
+        id: get-version
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_ENV
+          else
+            VERSION=$(echo ${{ github.ref_name }} | sed 's/^v//')
+            echo "VERSION=$VERSION" >> $GITHUB_ENV
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+      
+      - name: Create Release
+        id: create-release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ env.VERSION }}
+          release_name: 吐司便签 v${{ env.VERSION }}
+          body: |
+            ## 🍞 吐司便签 v${{ env.VERSION }}
+            
+            ### 安装包
+            
+            **macOS**
+            - Apple Silicon (M1/M2/M3): 下载 `*-aarch64.dmg`
+            - Intel: 下载 `*-x86_64.dmg`
+            
+            **Windows**
+            - 下载 `*-setup.exe` 或 `*.msi`
+            
+            **Linux**
+            - AppImage: 下载 `*.AppImage`
+            - Debian/Ubuntu: 下载 `*.deb`
+            
+            ### 快捷键
+            - `Ctrl + O` - 显示/隐藏窗口
+            
+            ### 注意事项
+            - macOS 版本已签名和公证
+            - Windows 版本使用 MSI 安装程序
+            - Linux 版本支持 AppImage 和 DEB 格式
+          draft: true
+          prerelease: false
+
+  # 构建多平台应用
+  build-tauri:
+    needs: create-release
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # macOS Apple Silicon (M1/M2/M3)
+          - platform: 'macos-latest'
+            args: '--target aarch64-apple-darwin'
+            arch: 'aarch64'
+            target: 'aarch64-apple-darwin'
+          
+          # macOS Intel
+          - platform: 'macos-latest'
+            args: '--target x86_64-apple-darwin'
+            arch: 'x86_64'
+            target: 'x86_64-apple-darwin'
+          
+          # Linux x64
+          - platform: 'ubuntu-22.04'
+            args: ''
+            arch: 'x86_64'
+            target: 'x86_64-unknown-linux-gnu'
+          
+          # Windows x64
+          - platform: 'windows-latest'
+            args: ''
+            arch: 'x86_64'
+            target: 'x86_64-pc-windows-msvc'
+
+    runs-on: ${{ matrix.platform }}
+    
+    steps:
+      # 1. 检出代码
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 2. 安装 Linux 依赖
+      - name: Install Linux dependencies
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      # 3. 安装 Bun
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      # 4. 安装 Rust
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      # 5. Rust 缓存
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+          cache-all-crates: true
+
+      # 6. 导入 macOS 证书
+      - name: Import macOS Certificate
+        if: matrix.platform == 'macos-latest'
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          echo "📝 导入 Apple 开发者证书..."
+          
+          # 解码证书
+          echo "$APPLE_CERTIFICATE" | base64 --decode > certificate.p12
+          
+          # 创建临时钥匙串
+          security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security set-keychain-settings -t 3600 -u build.keychain
+          
+          # 导入证书
+          security import certificate.p12 -k build.keychain -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign -T /usr/bin/productbuild || true
+          
+          # 允许 codesign 访问证书
+          security set-key-partition-list -S apple-tool:,apple:,codesign:,productbuild: -s -k "$KEYCHAIN_PASSWORD" build.keychain || true
+          
+          # 获取证书标识
+          CERT_INFO=$(security find-identity -v -p codesigning build.keychain 2>/dev/null | grep "Developer ID")
+          if [ -n "$CERT_INFO" ]; then
+            CERT_ID=$(echo "$CERT_INFO" | sed -n 's/.*"\([^"]*\)".*/\1/p' | head -1)
+            echo "APPLE_SIGNING_IDENTITY=$CERT_ID" >> $GITHUB_ENV
+            echo "✅ 证书导入成功: $CERT_ID"
+          else
+            echo "⚠️  未找到 Developer ID 证书，将尝试自动查找..."
+            CERT_ID=$(security find-identity -v -p codesigning 2>/dev/null | grep "Developer ID" | sed -n 's/.*"\([^"]*\)".*/\1/p' | head -1)
+            if [ -n "$CERT_ID" ]; then
+              echo "APPLE_SIGNING_IDENTITY=$CERT_ID" >> $GITHUB_ENV
+              echo "✅ 找到证书: $CERT_ID"
+            fi
+          fi
+          
+          # 清理
+          rm -f certificate.p12
+
+      # 7. 安装前端依赖
+      - name: Install dependencies
+        run: bun install
+
+      # 8. 构建 Tauri 应用
+      - name: Build Tauri
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # macOS 签名
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ env.APPLE_SIGNING_IDENTITY }}
+          # macOS 公证 - 使用 Apple ID 方式
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        with:
+          releaseId: ${{ needs.create-release.outputs.release_id }}
+          args: ${{ matrix.args }}
+
+      # 9. 上传构建产物（备用）
+      - name: Upload artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-failed-${{ matrix.target || matrix.platform }}
+          path: src-tauri/target/
+          if-no-files-found: ignore
+
+  # 发布 Release
+  publish-release:
+    needs: [create-release, build-tauri]
+    runs-on: ubuntu-latest
+    if: always() && needs.create-release.result == 'success'
+    steps:
+      - name: Publish Release
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { data: release } = await github.rest.repos.getRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: '${{ needs.create-release.outputs.release_id }}'
+            });
+            
+            // 检查是否有构建失败
+            const buildFailed = '${{ needs.build-tauri.result }}' === 'failure';
+            
+            if (!buildFailed && release.draft) {
+              await github.rest.repos.updateRelease({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                release_id: release.id,
+                draft: false
+              });
+              console.log('✅ Release 已发布');
+            } else if (buildFailed) {
+              console.log('⚠️  构建失败，Release 保持为草稿状态');
+            }
