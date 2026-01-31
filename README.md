@@ -1,6 +1,13 @@
-#  吐司便签 (ToSticker)
+<p align="center">
+  <img width="100" height="100" src="public/icon.svg" alt="Logo">
+</p>
 
-一款基于 **Tauri v2 + React + Rust** 构建的跨平台桌面便签待办应用。
+<h1 align="center"><b>吐司便签</b></h1>
+
+<p align="center">
+  一款跨平台桌面便签待办应用
+</p>
+
 
 ## 快速开始
 
@@ -8,8 +15,8 @@
 
 ```bash
 # 克隆仓库
-git clone <仓库地址>
-cd tosticker
+git clone https://github.com/zstar1003/Tosticker
+cd Tosticker
 
 # 安装依赖
 bun install
@@ -54,7 +61,7 @@ bun run tauri:build
 
 - `Ctrl + O` - 显示/隐藏应用窗口
 
-## 🛠 技术栈
+## 技术栈
 
 | 层级 | 技术 |
 |------|------|
@@ -66,7 +73,7 @@ bun run tauri:build
 | 数据库 | SQLite |
 | 包管理器 | Bun |
 
-## ⚙️ 配置说明
+## 配置说明
 
 ### AI 设置
 
@@ -84,11 +91,11 @@ bun run tauri:build
 - **Linux**: `~/.local/share/com.tosticker.app/tosticker.db`
 
 
-## 📄 许可证
+## 许可证
 
 [MIT License](LICENSE)
 
-## 🙏 致谢
+## 致谢
 
 - [Tauri](https://tauri.app/) - 跨平台应用框架
 - [React](https://react.dev/) - 用户界面库

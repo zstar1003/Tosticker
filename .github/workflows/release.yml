@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: '版本号 (例如: 0.1.0)'
+        description: 'v0.1.0'
         required: true
         default: '0.1.0'
   push:
@@ -44,9 +44,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: v${{ env.VERSION }}
-          release_name: 吐司便签 v${{ env.VERSION }}
+          release_name: tosticker v${{ env.VERSION }}
           body: |
-            ## 🍞 吐司便签 v${{ env.VERSION }}
+            ## tosticker v${{ env.VERSION }}
             
             ### 安装包
             
