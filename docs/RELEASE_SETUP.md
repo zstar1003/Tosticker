@@ -357,6 +357,58 @@ spctl -a -v /Applications/吐司便签.app
 
 ---
 
+## Windows 构建特殊说明
+
+### WiX Toolset (MSI) 构建失败
+
+**症状**: Windows 构建失败，错误信息包含 `failed to run light.exe`
+
+**原因**: Tauri 默认使用 WiX Toolset v3.14 创建 MSI 安装包，但 v3.14 在 GitHub Actions 上有已知问题。
+
+**解决方案 1**（已集成到工作流）:
+工作流已自动安装 WiX v3.11（更稳定版本），无需手动操作。
+
+**解决方案 2**（备选）: 使用 NSIS 替代 MSI
+
+如果你仍然遇到 MSI 构建问题，可以改用 NSIS 安装程序：
+
+1. 修改 `src-tauri/tauri.conf.json`:
+```json
+{
+  "bundle": {
+    "targets": ["dmg", "app", "nsis", "appimage", "deb"],
+    "windows": {
+      "nsis": {
+        "template": null,
+        "license": null,
+        "installMode": "currentUser",
+        "languages": ["SimpChinese", "English"]
+      }
+    }
+  }
+}
+```
+
+2. 将 `"targets"` 中的 `"msi"` 替换为 `"nsis"` 或同时保留两者
+
+**NSIS vs MSI 对比**:
+
+| 特性 | MSI | NSIS |
+|------|-----|------|
+| 文件大小 | 较小 | 较小（可压缩） |
+| 安装界面 | 标准 Windows 安装向导 | 可自定义 |
+| 卸载支持 | 自动集成 | 自动集成 |
+| 签名支持 | 完全支持 | 完全支持 |
+| CI 稳定性 | 需要 WiX | 更稳定 |
+
+### Windows 签名问题
+
+如果没有 Windows 签名证书，Windows 会显示安全警告。这是正常的，用户可以点击"更多信息" → "仍要运行"来安装。
+
+要消除警告，需要购买代码签名证书（见上文 Windows 签名部分）。
+
+---
+
 ## 安全最佳实践
 
 1. **不要提交证书到代码仓库**

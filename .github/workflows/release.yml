@@ -135,6 +135,23 @@ jobs:
           workspaces: './src-tauri -> target'
           cache-all-crates: true
 
+      # 5.5 安装 WiX Toolset v3.11 (Windows 专用)
+      # 修复 WiX v3.14 在 GitHub Actions 上的 light.exe 失败问题
+      - name: Install WiX Toolset v3.11 (Windows)
+        if: matrix.platform == 'windows-latest'
+        run: |
+          echo "🔧 安装 WiX Toolset v3.11..."
+          # 下载 WiX v3.11 (更稳定，避免 v3.14 的 light.exe 问题)
+          Invoke-WebRequest -Uri "https://github.com/wixtoolset/wix3/releases/download/wix3112rtm/wix311-binaries.zip" -OutFile "wix.zip"
+          # 解压到 Tauri 期望的位置
+          $wixDir = "$env:LOCALAPPDATA\tauri\WixTools"
+          New-Item -ItemType Directory -Force -Path $wixDir
+          Expand-Archive -Path "wix.zip" -DestinationPath $wixDir -Force
+          Remove-Item "wix.zip"
+          # 验证安装
+          & "$wixDir\light.exe" --help | Select-Object -First 1
+          echo "✅ WiX Toolset 安装完成"
+
       # 6. 导入 macOS 证书
       - name: Import macOS Certificate
         if: matrix.platform == 'macos-latest'
