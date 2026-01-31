@@ -93,7 +93,7 @@ export function Sidebar() {
         <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-gray-100">
           <div className="flex items-center gap-2 text-xs text-gray-400">
             <Layout size={12} />
-            <span>MindFlow v0.1.0</span>
+            <span>MindFlow v0.1.1</span>
           </div>
         </div>
       </aside>
