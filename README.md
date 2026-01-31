@@ -8,8 +8,18 @@
   一款跨平台桌面便签待办应用
 </p>
 
+## 快速下载
 
-## 快速开始
+访问[下载页面](https://github.com/zstar1003/Tosticker/releases/latest)下载该软件，支持Windows/Linux/MacOS系统。
+
+<div align="center">
+
+![软件界面](assets/image.png)
+
+</div>
+
+
+## 开发指南
 
 ### 安装与启动
 
@@ -60,18 +70,6 @@ bun run tauri:build
 ### 快捷键
 
 - `Ctrl + O` - 显示/隐藏应用窗口
-
-## 技术栈
-
-| 层级 | 技术 |
-|------|------|
-| 前端框架 | React 18 + TypeScript |
-| 构建工具 | Vite |
-| 样式 | 原生 CSS |
-| 桌面框架 | Tauri v2 |
-| 后端语言 | Rust |
-| 数据库 | SQLite |
-| 包管理器 | Bun |
 
 ## 配置说明
 
