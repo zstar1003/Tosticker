@@ -450,7 +450,14 @@ function App() {
         </button>
       )}
 
-      <SettingsPanel isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+      <SettingsPanel 
+            isOpen={isSettingsOpen} 
+            onClose={() => {
+              setIsSettingsOpen(false);
+              // 关闭设置面板时刷新 AI 设置
+              setAiSettings(getAISettings());
+            }} 
+          />
     </div>
   );
 }
